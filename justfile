@@ -15,6 +15,11 @@ kill:
     -lsof -i :3000 | awk 'NR==2 {print $2}' | xargs kill
     -lsof -i :3001 | awk 'NR==2 {print $2}' | xargs kill
 
+fix:
+    cargo fmt --all
+    cargo fix --lib --allow-dirty --features ssr -p picktheday 
+    cargo fix --lib --allow-dirty --features hydrate -p picktheday 
+
 dependencies:
     curl --proto '=https' --tlsv1.2 -LsSf https://github.com/diesel-rs/diesel/releases/latest/download/diesel_cli-installer.sh | sh
     rustup target add wasm32-unknown-unknown
