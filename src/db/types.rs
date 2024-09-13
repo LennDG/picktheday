@@ -25,6 +25,10 @@ impl Timestamp {
     pub fn new(timestamp: time::OffsetDateTime) -> Self {
         Timestamp(timestamp)
     }
+
+    pub fn now() -> Self {
+        Timestamp::new(time::OffsetDateTime::now_utc())
+    }
 }
 
 impl Display for Timestamp {
