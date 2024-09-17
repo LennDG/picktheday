@@ -7,6 +7,8 @@ async fn main() {
     use picktheday::app::*;
     use picktheday::fileserv::file_and_error_handler;
 
+    // Run migrations
+
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
     // <https://github.com/leptos-rs/start-axum#executing-a-server-on-a-remote-machine-without-the-toolchain>

@@ -2,14 +2,21 @@ layout {
     pane size=1 borderless=true {
         plugin location="zellij:tab-bar"
     }
-    pane split_direction="vertical" {
+    pane split_direction="vertical"  size="50%" {
         pane {
             name "web-server"
             command "just"
             args "watch"
         }
-        pane focus=true {
-            name "console"
+        pane split_direction="horizontal" size="50%" {
+            pane focus=true size="50%" {
+                name "console"
+            }
+            pane size="50%" {
+                name "postgres"
+                command "just"
+                args "connect_db"
+            }
         }
     }
     

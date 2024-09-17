@@ -1,9 +1,9 @@
 CREATE TABLE plans (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    public_id TEXT NOT NULL UNIQUE CHECK (length(public_id) <= 32),
-    name TEXT NOT NULL CHECK (length(name) <= 128),
-    description TEXT CHECK (length(description) <= 1024),
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    public_id VARCHAR(32) NOT NULL UNIQUE,
+    name VARCHAR(128) NOT NULL,
+    description VARCHAR(1024),
 
     -- Metadata
-    ctime TEXT NOT NULL
+    ctime TIMESTAMPTZ NOT NULL
 );

@@ -1,136 +1,12 @@
-use std::fmt::Display;
-
 use diesel::{
     backend::Backend,
     deserialize::{self, FromSql, FromSqlRow},
     expression::AsExpression,
+    pg::Pg,
     serialize::{self, Output, ToSql},
-    sql_types::Text,
-    sqlite::Sqlite,
+    sql_types::{Integer, Text},
 };
 use thiserror::Error;
-
-// region:	  --- Timestamp
-#[derive(Debug, Clone, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type=Text)]
-pub struct Timestamp(time::OffsetDateTime);
-
-#[derive(Error, Debug, Clone, PartialEq)]
-pub enum TimestampError {
-    #[error("{0}")]
-    ParseError(#[from] time::error::Parse),
-}
-
-impl Timestamp {
-    pub fn new(timestamp: time::OffsetDateTime) -> Self {
-        Timestamp(timestamp)
-    }
-
-    pub fn now() -> Self {
-        Timestamp::new(time::OffsetDateTime::now_utc())
-    }
-}
-
-impl Display for Timestamp {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use time::format_description::well_known::Rfc3339;
-
-        // Can unwrap because using a well known format
-        let v = self.0.format(&Rfc3339).unwrap();
-        write!(f, "{}", v)
-    }
-}
-
-impl TryFrom<&str> for Timestamp {
-    type Error = TimestampError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        use time::format_description::well_known::Rfc3339;
-
-        let timestamp = time::OffsetDateTime::parse(value, &Rfc3339)?;
-        Ok(Timestamp::new(timestamp))
-    }
-}
-
-impl ToSql<Text, Sqlite> for Timestamp {
-    fn to_sql(&self, out: &mut Output<Sqlite>) -> serialize::Result {
-        let v = self.to_string();
-        out.set_value(v);
-        Ok(serialize::IsNull::No)
-    }
-}
-
-impl<DB> FromSql<Text, DB> for Timestamp
-where
-    DB: Backend,
-    String: FromSql<Text, DB>,
-{
-    fn from_sql(bytes: DB::RawValue<'_>) -> diesel::deserialize::Result<Self> {
-        let binding = String::from_sql(bytes)?;
-        let timestamp = binding.as_str();
-        Ok(Timestamp::try_from(timestamp)?)
-    }
-}
-// endregion: --- Timestamp
-
-// region:	  --- Date
-#[derive(Debug, Clone, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type=Text)]
-pub struct Date(time::Date);
-
-#[derive(Error, Debug, Clone, PartialEq)]
-pub enum DateError {
-    #[error("{0}")]
-    ParseError(#[from] time::error::Parse),
-}
-
-impl Date {
-    pub fn new(date: time::Date) -> Self {
-        Self(date)
-    }
-}
-
-impl Display for Date {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use time::format_description::well_known::Rfc3339;
-
-        // Can unwrap because using a well known format
-        let v = self.0.format(&Rfc3339).unwrap();
-        write!(f, "{}", v)
-    }
-}
-
-impl TryFrom<&str> for Date {
-    type Error = DateError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        use time::format_description::well_known::Rfc3339;
-
-        let date = time::Date::parse(value, &Rfc3339)?;
-        Ok(Date::new(date))
-    }
-}
-
-impl ToSql<Text, Sqlite> for Date {
-    fn to_sql(&self, out: &mut Output<Sqlite>) -> serialize::Result {
-        let v = self.to_string();
-        out.set_value(v);
-        Ok(serialize::IsNull::No)
-    }
-}
-
-impl<DB> FromSql<Text, DB> for Date
-where
-    DB: Backend,
-    String: FromSql<Text, DB>,
-{
-    fn from_sql(bytes: DB::RawValue<'_>) -> diesel::deserialize::Result<Self> {
-        let binding = String::from_sql(bytes)?;
-        let date = binding.as_str();
-        Ok(Date::try_from(date)?)
-    }
-}
-// endregion: --- Date
 
 // region:	  --- Public ID
 #[derive(Debug, Clone, PartialEq, FromSqlRow, AsExpression)]
@@ -169,9 +45,9 @@ impl TryFrom<&str> for PublicId {
     }
 }
 
-impl ToSql<Text, Sqlite> for PublicId {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
-        <String as serialize::ToSql<Text, Sqlite>>::to_sql(&self.0, out)
+impl ToSql<Text, Pg> for PublicId {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        <String as serialize::ToSql<Text, Pg>>::to_sql(&self.0, out)
     }
 }
 
@@ -241,3 +117,33 @@ pub type PlanName = ConstrainedString<128>;
 pub type UserName = ConstrainedString<128>;
 
 pub type Description = ConstrainedString<1024>;
+
+// region:	  --- ID
+
+#[derive(Debug, Clone, Copy, PartialEq, FromSqlRow, AsExpression)]
+#[diesel(sql_type=Integer)]
+pub struct Id(i32);
+
+impl ToSql<Integer, Pg> for Id {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        <i32 as serialize::ToSql<Integer, Pg>>::to_sql(&self.0, out)
+    }
+}
+
+impl<DB> FromSql<Integer, DB> for Id
+where
+    DB: Backend,
+    i32: FromSql<Integer, DB>,
+{
+    fn from_sql(bytes: DB::RawValue<'_>) -> diesel::deserialize::Result<Self> {
+        let id = i32::from_sql(bytes)?;
+        Ok(Id(id))
+    }
+}
+// endregion: --- ID
+
+pub type PlanId = Id;
+
+pub type UserId = Id;
+
+pub type DateId = Id;
