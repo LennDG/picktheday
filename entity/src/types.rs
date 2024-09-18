@@ -1,4 +1,5 @@
-use sea_orm::{DbErr, DeriveValueType, QueryResult, TryFromU64, Value};
+use derive_more::derive::Display;
+use sea_orm::{DbErr, DeriveValueType, QueryResult, Value};
 use thiserror::Error;
 
 // region:	  --- Public ID
@@ -27,7 +28,7 @@ impl PublicId {
 // endregion: --- Public ID
 
 // region:    --- Constrained String
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Display, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ConstrainedString<const MAX_LEN: usize>(String);
 
 #[derive(Error, Debug, Clone, PartialEq)]
@@ -99,19 +100,22 @@ pub type Description = ConstrainedString<1024>;
 // endregion: --- Constrained String
 
 // region:	  --- ID
-#[derive(Debug, Clone, PartialEq, Eq, DeriveValueType)]
-pub struct Id(u64);
 
-impl TryFromU64 for Id {
-    fn try_from_u64(n: u64) -> Result<Self, DbErr> {
-        Ok(Id(n))
-    }
-}
+// THIS DOES NOT WORK BECAUSE SeaORM REALLY WANTS A i32 AS ID.
 
-pub type PlanId = Id;
+// #[derive(Debug, Clone, PartialEq, Eq, DeriveValueType)]
+// pub struct Id(u64);
 
-pub type UserId = Id;
+// impl TryFromU64 for Id {
+//     fn try_from_u64(n: u64) -> Result<Self, DbErr> {
+//         Ok(Id(n))
+//     }
+// }
 
-pub type DateId = Id;
+// pub type PlanId = Id;
+
+// pub type UserId = Id;
+
+// pub type DateId = Id;
 
 // endregion: --- ID

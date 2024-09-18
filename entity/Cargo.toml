@@ -19,3 +19,4 @@ sea-orm = { version = "1.0.1", features = [
     "macros",
     "with-time",
 ] }
+derive_more = { version = "1", features = ["display"] }
