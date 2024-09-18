@@ -1,9 +1,0 @@
-CREATE TABLE plans (
-    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    public_id VARCHAR(32) NOT NULL UNIQUE,
-    name VARCHAR(128) NOT NULL,
-    description VARCHAR(1024),
-
-    -- Metadata
-    ctime TIMESTAMPTZ NOT NULL
-);

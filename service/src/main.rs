@@ -4,10 +4,22 @@ async fn main() {
     use axum::Router;
     use leptos::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
-    use picktheday::app::*;
     use picktheday::fileserv::file_and_error_handler;
+    use picktheday::{app::*, db};
+    use tracing::info;
+
+    // Setup tracing subscriber
+    tracing_subscriber::fmt()
+        .without_time()
+        .with_target(false)
+        .init();
 
     // Run migrations
+
+    // Get the DB
+    let mm = db::ModelManager::new()
+        .await
+        .expect("Could not establish DB connection");
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
@@ -21,12 +33,17 @@ async fn main() {
 
     // build our application with a route
     let app = Router::new()
-        .leptos_routes(&leptos_options, routes, App)
+        .leptos_routes_with_context(
+            &leptos_options,
+            routes,
+            move || provide_context(mm.clone()),
+            App,
+        )
         .fallback(file_and_error_handler)
         .with_state(leptos_options);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    logging::log!("listening on http://{}", &addr);
+    info!("listening on http://{}", &addr);
     axum::serve(listener, app.into_make_service())
         .await
         .unwrap();

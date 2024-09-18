@@ -3,10 +3,17 @@ watch: kill
     cargo leptos watch
 
 migrate:
-    diesel migration run
+    sea-orm-cli migrate up
 
 new_migration name:
-    diesel migration generate {{name}}
+    sea-orm-cli migrate generate {{name}}
+
+generate_entity table:
+    cp entity/src/lib.rs tmp
+    sea-orm-cli generate entity -o entity/src --date-time-crate time --lib --tables {{table}}
+    @-diff -u entity/src/lib.rs tmp > changes.patch
+    @patch entity/src/lib.rs changes.patch
+    @rm changes.patch tmp
 
 zellij:
     zellij --layout zellij-layout.kdl
@@ -21,9 +28,8 @@ fix:
     cargo fix --lib --allow-dirty --features hydrate -p picktheday 
 
 dependencies:
-    curl --proto '=https' --tlsv1.2 -LsSf https://github.com/diesel-rs/diesel/releases/latest/download/diesel_cli-installer.sh | sh
     rustup target add wasm32-unknown-unknown
-    sudo apt-get install libpq-dev
+    cargo install sea-orm-cli@1.0.0-rc.5
 
 start_db:
     docker compose up -d postgres

@@ -39,12 +39,22 @@ pub fn App() -> impl IntoView {
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    let (count, set_count) = create_signal(0);
-    let on_click = move |_| set_count.update(|count| *count += 1);
-
     view! {
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
+        <div>
+            <h1>Pick The Day</h1>
+            <p>Create a meetup!</p>
+
+            <form class="container relative z-0 mx-auto flex max-w-80 justify-center space-x-4">
+                <div>
+                    <input type="text" id="new_plan" name="new_plan"
+                        class="border-1 peer block w-full appearance-none rounded-lg border border-gray-600 bg-transparent px-2 py-2.5 text-sm text-white outline-none focus:border-gray-300 "
+                        placeholder="e.g. Tennis" />
+                </div>
+                <button type="submit" hx-post="/plan" hx-include="#new_plan"
+                    class="mb-2 me-2 flex rounded-lg border-gray-700 bg-gray-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700">Create</button>
+            </form>
+            <a href="/about">About</a>
+        </div>
+
     }
 }
