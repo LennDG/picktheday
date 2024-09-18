@@ -74,7 +74,7 @@ mod tests {
     use super::*;
     use anyhow::Result;
     use entity::{
-        plans,
+        dates, plans,
         types::{PlanName, UserName},
         users,
     };
@@ -116,6 +116,37 @@ mod tests {
 
         // -- Check
         assert_eq!(new_user.name.to_string(), "test_create_user_ok".to_string());
+
+        // -- Cleanup
+        new_plan.delete(db).await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_create_date_ok() -> Result<()> {
+        let mm = _dev_utils::init_test().await;
+        let db = mm.db();
+
+        let new_plan = plans::NewPlan::new(PlanName::new("test_create_date_ok").unwrap(), None)
+            .into_active_model()
+            .insert(db)
+            .await?;
+
+        let new_user =
+            users::NewUser::new(UserName::new("test_create_date_ok").unwrap(), new_plan.id)
+                .into_active_model()
+                .insert(db)
+                .await?;
+
+        let new_date = dates::NewDate::new(time::OffsetDateTime::now_utc().date(), new_user.id)
+            .into_active_model()
+            .insert(db)
+            .await?;
+
+        // -- Check
+        assert_eq!(new_user.name.to_string(), "test_create_date_ok".to_string());
+        let dates = new_user.find_related(dates::Entity).all(db).await?;
+        assert_eq!(dates.len(), 1);
 
         // -- Cleanup
         new_plan.delete(db).await?;
