@@ -2,6 +2,9 @@
 watch: kill
     cargo leptos watch
 
+test:
+    cargo test --all-features -- --nocapture
+
 migrate:
     sea-orm-cli migrate up
 

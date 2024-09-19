@@ -13,10 +13,5 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "1"
 rand = "0.8"
 time = "0.3"
-sea-orm = { version = "1.0.1", features = [
-    "sqlx-postgres",
-    "runtime-tokio-rustls",
-    "macros",
-    "with-time",
-] }
+sea-orm = { version = "1.0.1", features = ["macros", "with-time"] }
 derive_more = { version = "1", features = ["display"] }

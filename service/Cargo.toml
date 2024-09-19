@@ -35,10 +35,10 @@ sea-orm = { version = "1.0.1", features = [
     "runtime-tokio-rustls",
     "macros",
     "with-time",
-] }
+], optional = true }
 
-entity = { path = "../entity" }
-migration = { path = "../migration" } # depends on your needs
+entity = { path = "../entity", optional = true }
+migration = { path = "../migration", optional = true } # depends on your needs
 
 [dev-dependencies]
 anyhow = "1"
@@ -56,6 +56,9 @@ ssr = [
     "leptos_router/ssr",
     "dep:tracing",
     "dep:tracing-subscriber",
+    "dep:sea-orm",
+    "dep:entity",
+    "dep:migration",
 ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode

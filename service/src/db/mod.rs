@@ -1,6 +1,6 @@
 pub use self::error::{Error, Result};
 use dotenvy::dotenv;
-use sea_orm::{entity::*, query::*, ConnectOptions, Database, DatabaseConnection};
+use sea_orm::{entity::*, ConnectOptions, Database, DatabaseConnection};
 use std::env;
 use std::time::Duration;
 
