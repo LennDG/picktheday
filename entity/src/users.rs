@@ -59,7 +59,7 @@ impl IntoActiveModel<ActiveModel> for NewUser {
         ActiveModel {
             name: Set(self.name),
             plan_id: Set(self.plan_id),
-            public_id: Set(PublicId::new()),
+            public_id: Set(PublicId::default()),
             ctime: Set(time::OffsetDateTime::now_utc()),
             ..Default::default()
         }

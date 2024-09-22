@@ -7,12 +7,21 @@ use thiserror::Error;
 pub struct PublicId(String);
 
 #[derive(Error, Debug, Clone, PartialEq)]
-#[error("{0} is not a valid PublicId")]
+#[error("{0:.120} is not a valid PublicId")]
 pub struct PublicIdError(String);
 
 impl PublicId {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
+    pub fn new(public_id: &str) -> Result<Self, PublicIdError> {
+        if public_id.len() <= 32 && public_id.chars().all(char::is_alphanumeric) {
+            Ok(PublicId(public_id.to_string()))
+        } else {
+            Err(PublicIdError(public_id.to_string()))
+        }
+    }
+}
+
+impl Default for PublicId {
+    fn default() -> Self {
         use rand::distributions::Alphanumeric;
         use rand::{thread_rng, Rng};
 

@@ -45,7 +45,7 @@ impl IntoActiveModel<ActiveModel> for NewPlan {
         ActiveModel {
             name: Set(self.name),
             description: Set(self.description),
-            public_id: Set(PublicId::new()),
+            public_id: Set(PublicId::default()),
             ctime: Set(time::OffsetDateTime::now_utc()),
             ..Default::default()
         }

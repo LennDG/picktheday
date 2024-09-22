@@ -72,12 +72,12 @@ fn database_url_for_env() -> String {
 mod tests {
     #![allow(unused)]
     use super::*;
-    use anyhow::Result;
-    use entity::{
+    use crate::{
         dates, plans,
         types::{PlanName, UserName},
         users,
     };
+    use anyhow::Result;
     use sea_orm::{EntityTrait, IntoActiveModel, Set};
 
     #[tokio::test]

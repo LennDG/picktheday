@@ -4,8 +4,8 @@ async fn main() {
     use axum::Router;
     use leptos::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
+    use picktheday::app::*;
     use picktheday::fileserv::file_and_error_handler;
-    use picktheday::{app::*, db};
     use tracing::info;
 
     // Setup tracing subscriber
@@ -17,7 +17,7 @@ async fn main() {
     // Run migrations
 
     // Get the DB
-    let mm = db::ModelManager::new()
+    let mm = entity::db::ModelManager::new()
         .await
         .expect("Could not establish DB connection");
 
