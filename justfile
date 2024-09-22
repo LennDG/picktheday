@@ -30,6 +30,9 @@ fix:
     cargo fix --lib --allow-dirty --features ssr -p picktheday 
     cargo fix --lib --allow-dirty --features hydrate -p picktheday 
 
+tailwind_watch:
+    npx tailwindcss -i ./service/style/input.css -o ./service/style/output.css --watch
+
 dependencies:
     rustup target add wasm32-unknown-unknown
     cargo install sea-orm-cli@1.0.0-rc.5

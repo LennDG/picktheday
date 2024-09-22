@@ -4,7 +4,11 @@ module.exports = {
         files: ["*.html", "./src/**/*.rs"],
     },
     theme: {
-        extend: {},
+        extend: {
+            fontFamily: {
+                sans: ["Inter var", ...fontFamily.sans],
+            },
+        },
     },
     plugins: [],
 }
