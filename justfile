@@ -30,6 +30,9 @@ fix:
     cargo fix --lib --allow-dirty --features ssr -p picktheday 
     cargo fix --lib --allow-dirty --features hydrate -p picktheday 
 
+build:
+    cargo leptos build --release
+
 tailwind_watch:
     npx tailwindcss -i ./service/style/input.css -o ./service/style/output.css --watch
 
