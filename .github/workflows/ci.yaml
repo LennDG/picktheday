@@ -9,15 +9,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    # steps:
+    #   # Step 1: Checkout the repository
+    #   - name: Checkout repository
+    #     uses: actions/checkout@v3
 
-      # Step 2: Install Rust
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v2
-        with:
-          toolchain: nightly
-          override: true
-          target: wasm32-unknown-unknown
+    #   # Step 2: Install Rust
+    #   - name: Set up Rust
+    #     uses: actions-rs/toolchain@v1
+    #     with:
+    #       toolchain: nightly
+    #       override: true
+    #       target: wasm32-unknown-unknown
