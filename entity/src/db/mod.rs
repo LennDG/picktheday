@@ -1,5 +1,6 @@
 pub use self::error::{Error, Result};
 use dotenvy::dotenv;
+use migration::MigratorTrait;
 use sea_orm::{entity::*, ConnectOptions, Database, DatabaseConnection};
 use std::env;
 use std::time::Duration;
@@ -31,6 +32,12 @@ impl ModelManager {
 
     pub fn db(&self) -> &DatabaseConnection {
         &self.db
+    }
+
+    pub async fn run_migrations(&self) -> Result<()> {
+        migration::Migrator::up(&self.db, None).await?;
+
+        Ok(())
     }
 }
 

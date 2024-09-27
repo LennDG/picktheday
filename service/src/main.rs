@@ -14,12 +14,13 @@ async fn main() {
         .with_target(false)
         .init();
 
-    // Run migrations
-
     // Get the DB
     let mm = entity::db::ModelManager::new()
         .await
         .expect("Could not establish DB connection");
+
+    // Run migrations
+    mm.run_migrations().await.expect("Migrations failed!");
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
