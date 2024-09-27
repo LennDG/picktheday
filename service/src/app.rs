@@ -10,26 +10,29 @@ pub fn App() -> impl IntoView {
 
     view! {
 
-
         // injects a stylesheet into the document <head>
+        // id=leptos means cargo-leptos will hot-reload this stylesheet
         <Stylesheet id="leptos" href="/pkg/picktheday.css"/>
+        <Link href="https://rsms.me/inter/inter.css" rel="stylesheet" />
+
+        <Body class="container relative mx-auto bg-slate-800"/>
 
         // sets the document title
         <Title text="Welcome to Leptos"/>
+            // content for this welcome page
+            <Router fallback=|| {
+                let mut outside_errors = Errors::default();
+                outside_errors.insert_with_default_key(AppError::NotFound);
+                view! {
+                    <ErrorTemplate outside_errors/>
+                }
+                .into_view()
+            }>
+                <Routes>
+                    <Route path="" view=HomePage/>
+                </Routes>
+            </Router>
 
-        // content for this welcome page
-        <Router fallback=|| {
-            let mut outside_errors = Errors::default();
-            outside_errors.insert_with_default_key(AppError::NotFound);
-            view! {
-                <ErrorTemplate outside_errors/>
-            }
-            .into_view()
-        }>
-            <Routes>
-                <Route path="" view=HomePage/>
-            </Routes>
-        </Router>
     }
 }
 
@@ -37,7 +40,8 @@ pub fn App() -> impl IntoView {
 #[component]
 fn HomePage() -> impl IntoView {
     view! {
-        <main class="container text-white text-center pt-16 relative mx-auto bg-slate-800">
+
+        <main class="container text-white text-center pt-16">
             <div>
                 <h1>"Pick The Day"</h1>
                 <p>"Create a meetup!"</p>

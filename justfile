@@ -31,7 +31,7 @@ fix:
     cargo fix --lib --allow-dirty --features hydrate -p picktheday 
 
 tailwind_watch:
-    npx tailwindcss -i ./service/style/input.css -o ./service/style/output.css --watch
+    cd service && npx tailwindcss -i ./style/input.css -o ./style/output.css --watch
 
 dependencies:
     rustup target add wasm32-unknown-unknown
