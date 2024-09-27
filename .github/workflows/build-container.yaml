@@ -6,10 +6,10 @@ on:
       - main
 
   # schedule:
-  #   - cron: "0 0 */3 * *"
+  #   - cron: "0 0 0 0 *"
 
 jobs:
-  build-and_push-container:
+  build-and-push-container:
     runs-on: ubuntu-latest
 
     steps:
