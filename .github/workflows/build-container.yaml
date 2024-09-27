@@ -37,5 +37,5 @@ jobs:
         with:
           context: .
           file: Dockerfiles/build.dockerfile
-          tags: ghcr.io/${{ env.REPOSITORY_OWNER }}/leptos-builder:latest
+          tags: ghcr.io/${{ env.REPOSITORY_OWNER }}/utils/leptos-builder:latest
           push: true
