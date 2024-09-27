@@ -6,7 +6,7 @@ on:
       - main
 
   # schedule:
-  #   - cron: "0 0 * * 0"
+  #   - cron: "0 0 */3 * *"
 
 jobs:
   build-and_push-container:
@@ -27,11 +27,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: lowercase github.repository_owner
+        run: |
+          echo "REPOSITORY_OWNER=`echo ${{github.repository_owner}} | tr '[:upper:]' '[:lower:]'`" >>${GITHUB_ENV}
+
       # Step 4: Build and push image
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfiles/build.dockerfile
-          tags: leptos-builder:latest
+          tags: ghcr.io/${{ env.REPOSITORY_OWNER }}/leptos-builder:latest
           push: true
