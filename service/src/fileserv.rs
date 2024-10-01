@@ -1,16 +1,13 @@
-use axum::response::{Html, Response as AxumResponse};
+use axum::response::Response as AxumResponse;
 use axum::{
     body::Body,
     http::{Request, Response, StatusCode},
     response::IntoResponse,
 };
-use leptos::prelude::RenderHtml;
-use leptos::view;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
-use tracing::info;
 
-use crate::app::{not_found, NotFound, Page};
+use crate::app::not_found_page;
 use crate::config::web_config;
 
 pub async fn file_and_error_handler(req: Request<Body>) -> AxumResponse {
@@ -32,7 +29,7 @@ pub async fn file_and_error_handler(req: Request<Body>) -> AxumResponse {
     if res.status() == StatusCode::OK {
         res.into_response()
     } else {
-        not_found().await.into_response()
+        not_found_page().await.into_response()
     }
 }
 

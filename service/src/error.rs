@@ -12,6 +12,8 @@ pub enum Error {
     // -- Validation failure
     #[error("Invalid plan: {0}")]
     NewPlanInvalid(String),
+    #[error("Invalid user: {0}")]
+    NewUserInvalid(String),
     #[error("Invalid uri: {0}")]
     UriInvalid(#[from] http::uri::InvalidUri),
 

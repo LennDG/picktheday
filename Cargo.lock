@@ -2269,6 +2269,7 @@ dependencies = [
  "http",
  "leptos",
  "leptos_axum",
+ "leptos_meta",
  "rand",
  "serde",
  "serde_json",

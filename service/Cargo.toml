@@ -13,7 +13,7 @@ axum-htmx = "0.6.0"
 leptos = { version = "0.7.0-beta7", features = [
     "nightly",
 ] } # Frontend framework for building web apps in Rust
-# leptos_meta = { version = "0.6", features = ["nightly"] } # Meta tags for leptos
+leptos_meta = { version = "0.7.0-beta7" } # Meta tags for leptos
 leptos_axum = { version = "0.7.0-beta7" } # Leptos integration with Axum
 
 # --- Async and Concurrency ---

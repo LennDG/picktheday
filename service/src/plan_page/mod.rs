@@ -20,6 +20,10 @@ use http::{StatusCode, Uri};
 use leptos::prelude::*;
 use serde::Deserialize;
 use tracing::debug;
+use user::Users;
+
+mod calendar;
+mod user;
 
 pub fn routes(mm: ModelManager) -> Router {
     Router::new().nest(
@@ -28,14 +32,16 @@ pub fn routes(mm: ModelManager) -> Router {
             .route("/", post(create_plan_handler))
             .nest(
                 "/:plan_slug",
-                Router::new().route("/", get(plan_page_handler)),
+                Router::new()
+                    .route("/", get(plan_page_handler))
+                    .merge(calendar::routes(mm.clone())),
             )
             .with_state(mm),
     )
 }
 
 // region:	  --- Plan creation
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct PlanPost {
     new_plan: String,
 }
@@ -50,6 +56,7 @@ impl TryFrom<PlanPost> for NewPlan {
     }
 }
 
+#[derive(Debug)]
 struct CreatePlanResponse {
     plan_url: Uri,
 }
@@ -100,19 +107,23 @@ async fn plan_page_handler(
         .await?;
 
     if let Some(plan) = plan {
-        Ok(Html(PlanPage().to_html()))
+        Ok(Html(view! {<PlanPage plan=plan/>}.to_html()))
     } else {
         Ok(Html(NotFound().to_html()))
     }
 }
 
 #[component]
-fn PlanPage() -> impl IntoView {
+fn PlanPage(plan: plans::Model) -> impl IntoView {
+    let plan_title = plan.name.to_string();
+
     view! {
-        <Page>
+        <Page title=plan_title.clone()>
             <div>
-                <p>"hehe plan"</p>
+                <h1>{plan_title}</h1>
             </div>
+            //<Calendar/>
+            <Users plan=plan current_user=None/>
         </Page>
     }
 }

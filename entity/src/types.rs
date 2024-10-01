@@ -1,9 +1,11 @@
 use derive_more::derive::Display;
 use sea_orm::{DbErr, DeriveValueType, QueryResult, Value};
+use serde::Deserialize;
 use thiserror::Error;
 
 // region:	  --- Public ID
-#[derive(Debug, Clone, PartialEq, Eq, Display, DeriveValueType)]
+#[derive(Debug, Clone, PartialEq, Eq, Display, Deserialize, DeriveValueType)]
+#[serde(transparent)]
 pub struct PublicId(String);
 
 #[derive(Error, Debug, Clone, PartialEq)]
