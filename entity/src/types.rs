@@ -3,7 +3,7 @@ use sea_orm::{DbErr, DeriveValueType, QueryResult, Value};
 use thiserror::Error;
 
 // region:	  --- Public ID
-#[derive(Debug, Clone, PartialEq, Eq, DeriveValueType)]
+#[derive(Debug, Clone, PartialEq, Eq, Display, DeriveValueType)]
 pub struct PublicId(String);
 
 #[derive(Error, Debug, Clone, PartialEq)]

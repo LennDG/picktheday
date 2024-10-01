@@ -13,7 +13,7 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "1"
 rand = "0.8"
 time = "0.3"
-derive_more = { version = "1", features = ["display"] }
+derive_more = { workspace = true }
 
 migration = { path = "../migration" } # depends on your needs
 
@@ -27,7 +27,7 @@ sea-orm = { version = "1.0.1", features = [
 
 tokio = { version = "1", features = ["full"] }
 
-dotenvy = "0.15"
+dotenvy = { workspace = true }
 
 [dev-dependencies]
 anyhow = "1"

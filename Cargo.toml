@@ -12,3 +12,8 @@ opt-level = 'z'
 lto = true
 codegen-units = 1
 panic = "abort"
+
+
+[workspace.dependencies]
+derive_more = { version = "1.0.0-beta", features = ["from", "display"] }
+dotenvy = "0.15"

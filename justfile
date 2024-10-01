@@ -1,6 +1,11 @@
 # watch server
-watch: kill
+watch_leptos: kill
     cargo leptos watch
+
+# Watch webserver
+watch: kill
+    @sleep 2
+    cargo watch -q -c -w service/ -w entity/ -x "run -p picktheday"
 
 test:
     cargo test --all-features -- --nocapture
@@ -27,14 +32,15 @@ kill:
 
 fix:
     cargo fmt --all
-    cargo fix --lib --allow-dirty --features ssr -p picktheday 
-    cargo fix --lib --allow-dirty --features hydrate -p picktheday 
+    cargo fix --lib --allow-dirty -p picktheday
 
 build:
     cargo leptos build --release
 
 tailwind_watch:
-    cd service && npx tailwindcss -i ./style/input.css -o ./style/output.css --watch
+    cd service && npx tailwindcss -i ./style/input.css -o ../public/main.css --watch
+tailwind:
+    cd service && npx tailwindcss -i ./style/input.css -o ../public/main.css
 
 dependencies:
     rustup target add wasm32-unknown-unknown
@@ -58,7 +64,7 @@ test_db: start_db
     done
     @echo "PostgreSQL is ready on port 5432!"
 
-reset_db:
+reset_db: stop_db
     docker volume rm picktheday_dev_db
 
 connect_db: test_db

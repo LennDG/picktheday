@@ -16,16 +16,16 @@ pub struct ModelManager {
 }
 
 impl ModelManager {
-    pub async fn new() -> Result<Self> {
+    pub async fn new(db_url: String) -> Result<Self> {
         // TODO: Do so checking here?
-        let db = get_connection_pool().await?;
+        let db = get_connection_pool(db_url).await?;
 
         Ok(ModelManager { db })
     }
 
-    pub async fn new_test() -> Result<Self> {
+    pub async fn new_test(db_url: String) -> Result<Self> {
         // TODO: Do so checking here?
-        let db = get_test_connection().await?;
+        let db = get_test_connection(db_url).await?;
 
         Ok(ModelManager { db })
     }
@@ -41,7 +41,7 @@ impl ModelManager {
     }
 }
 
-pub async fn get_test_connection() -> Result<DatabaseConnection> {
+pub async fn get_test_connection(url: String) -> Result<DatabaseConnection> {
     let url = database_url_for_env();
     let mut opt = ConnectOptions::new(url);
 
@@ -55,7 +55,7 @@ pub async fn get_test_connection() -> Result<DatabaseConnection> {
     Ok(Database::connect(opt).await?)
 }
 
-pub async fn get_connection_pool() -> Result<DatabaseConnection> {
+pub async fn get_connection_pool(url: String) -> Result<DatabaseConnection> {
     let url = database_url_for_env();
     let mut opt = ConnectOptions::new(url);
 

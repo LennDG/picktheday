@@ -9,7 +9,9 @@ pub async fn init_test() -> ModelManager {
     let mm = INIT
         .get_or_init(|| async {
             // NOTE: Rare occasion where unwrap is kind of ok.
-            ModelManager::new_test().await.unwrap()
+            ModelManager::new_test("postgres://dev:devpassword@localhost/testdb".to_string())
+                .await
+                .unwrap()
         })
         .await;
 

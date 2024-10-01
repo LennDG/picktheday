@@ -1,7 +1,4 @@
 {
-    "rust-analyzer.cargo.features": [
-        "ssr"
-    ],
     "tailwindCSS.includeLanguages": {
         "rust": "html",
         "*.rs": "html"

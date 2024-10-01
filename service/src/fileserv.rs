@@ -1,21 +1,21 @@
-use crate::app::App;
-use axum::response::Response as AxumResponse;
+use axum::response::{Html, Response as AxumResponse};
 use axum::{
     body::Body,
-    extract::State,
     http::{Request, Response, StatusCode},
     response::IntoResponse,
 };
-use leptos::*;
+use leptos::prelude::RenderHtml;
+use leptos::view;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
+use tracing::info;
 
-pub async fn file_and_error_handler(
-    State(options): State<LeptosOptions>,
-    req: Request<Body>,
-) -> AxumResponse {
-    let root = options.site_root.clone();
-    let (parts, body) = req.into_parts();
+use crate::app::{not_found, NotFound, Page};
+use crate::config::web_config;
+
+pub async fn file_and_error_handler(req: Request<Body>) -> AxumResponse {
+    let root = &web_config().WEB_FOLDER;
+    let (parts, _) = req.into_parts();
 
     let mut static_parts = parts.clone();
     static_parts.headers.clear();
@@ -25,17 +25,14 @@ pub async fn file_and_error_handler(
             .insert("accept-encoding", encodings.clone());
     }
 
-    let res = get_static_file(Request::from_parts(static_parts, Body::empty()), &root)
+    let res = get_static_file(Request::from_parts(static_parts, Body::empty()), root)
         .await
         .unwrap();
 
     if res.status() == StatusCode::OK {
         res.into_response()
     } else {
-        let handler = leptos_axum::render_app_to_stream(options.to_owned(), App);
-        handler(Request::from_parts(parts, body))
-            .await
-            .into_response()
+        not_found().await.into_response()
     }
 }
 

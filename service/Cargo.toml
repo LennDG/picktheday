@@ -7,48 +7,66 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-axum = { version = "0.7", optional = true }
-console_error_panic_hook = "0.1"
-leptos = { version = "0.6", features = ["nightly"] }
-leptos_axum = { version = "0.6", optional = true }
-leptos_meta = { version = "0.6", features = ["nightly"] }
-leptos_router = { version = "0.6", features = ["nightly"] }
-tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
-tower = { version = "0.4", optional = true }
-tower-http = { version = "0.5", features = ["fs"], optional = true }
-wasm-bindgen = "=0.2.93"
-thiserror = "1"
-http = "1"
-time = "0.3"
-rand = "0.8"
+# --- Web Framework and Server ---
+axum = { version = "0.7", features = ["macros"] } # Web framework based on Hyper
+axum-htmx = "0.6.0"
+leptos = { version = "0.7.0-beta7", features = [
+    "nightly",
+] } # Frontend framework for building web apps in Rust
+# leptos_meta = { version = "0.6", features = ["nightly"] } # Meta tags for leptos
+leptos_axum = { version = "0.7.0-beta7" } # Leptos integration with Axum
 
+# --- Async and Concurrency ---
+tokio = { version = "1", features = [
+    "rt-multi-thread",
+] } # Async runtime for Rust
+tower = { version = "0.4" } # Tower middleware and services
+tower-http = { version = "0.5", features = ["fs"] } # HTTP utilities for Tower
 
-tracing = { version = "0.1", optional = true }
-tracing-subscriber = { version = "0.3.0", optional = true }
+# --- Error Handling ---
+thiserror = "1" # Simplified error handling
 
-# Serde
+# --- Utilities and Helpers ---
+http = "1"                         # HTTP types and utilities
+time = "0.3"                       # Time handling in Rust
+rand = "0.8"                       # Random number generation
+derive_more = { workspace = true } # Derive common traits with less boilerplate
+dotenvy = { workspace = true }
 
-# Modules
-entity = { path = "../entity", optional = true }
+# --- Tracing and Logging ---
+tracing = { version = "0.1" }              # tracing for structured logging
+tracing-subscriber = { version = "0.3.0" } # tracing subscriber for filtering/logging
+
+# --- Panic Hook ---
+console_error_panic_hook = "0.1" # Hook for better error reporting in WebAssembly
+
+# --- Serialization and JSON ---
+serde = { version = "1", features = ["derive"] } # Serialization framework
+serde_json = "1"                                 # JSON serialization/deserialization
+serde_with = "3"                                 # Enhanced functionality for Serde
+
+# --- WebAssembly ---
+wasm-bindgen = "=0.2.93" # For communicating between Rust and JavaScript in WASM
+
+# --- Modules ---
+entity = { path = "../entity" } # module from local path
 
 [dev-dependencies]
 anyhow = "1"
 
 [features]
-hydrate = ["leptos/hydrate", "leptos_meta/hydrate", "leptos_router/hydrate"]
-ssr = [
-    "dep:axum",
-    "dep:tokio",
-    "dep:tower",
-    "dep:tower-http",
-    "dep:leptos_axum",
-    "leptos/ssr",
-    "leptos_meta/ssr",
-    "leptos_router/ssr",
-    "dep:tracing",
-    "dep:tracing-subscriber",
-    "dep:entity",
-]
+# hydrate = ["leptos/hydrate"]
+# ssr = [
+#     "dep:axum",
+#     "dep:tokio",
+#     "dep:tower",
+#     "dep:tower-http",
+#     "dep:leptos_axum",
+#     "leptos/ssr",
+#     "dep:tracing",
+#     "dep:tracing-subscriber",
+#     "dep:entity",
+# ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode
 [profile.wasm-release]
@@ -74,7 +92,7 @@ style-file = "style/output.css"
 # Assets source dir. All files found here will be copied and synchronized to site-root.
 # The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
 #
-# Optional. Env: LEPTOS_ASSETS_DIR.
+#. Env: LEPTOS_ASSETS_DIR.
 assets-dir = "public"
 
 # The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
@@ -97,25 +115,25 @@ env = "DEV"
 
 # The features to use when compiling the bin target
 #
-# Optional. Can be over-ridden with the command line parameter --bin-features
+#. Can be over-ridden with the command line parameter --bin-features
 bin-features = ["ssr"]
 
 # If the --no-default-features flag should be used when compiling the bin target
 #
-# Optional. Defaults to false.
+#. Defaults to false.
 bin-default-features = false
 
 # The features to use when compiling the lib target
 #
-# Optional. Can be over-ridden with the command line parameter --lib-features
+#. Can be over-ridden with the command line parameter --lib-features
 lib-features = ["hydrate"]
 
 # If the --no-default-features flag should be used when compiling the lib target
 #
-# Optional. Defaults to false.
+#. Defaults to false.
 lib-default-features = false
 
 # The profile to use for the lib target when compiling for release
 #
-# Optional. Defaults to "release".
+#. Defaults to "release".
 lib-profile-release = "wasm-release"
