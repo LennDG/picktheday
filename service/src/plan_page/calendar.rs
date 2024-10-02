@@ -22,7 +22,7 @@ pub fn routes(mm: ModelManager) -> Router<entity::db::ModelManager> {
     Router::new().nest(
         "/calendar",
         Router::new()
-            .route("/", get(get_calendar_handler))
+            .route("/", get(get_calendar_handler).post(toggle_date_handler))
             .with_state(mm),
     )
 }
@@ -74,10 +74,21 @@ async fn get_calendar_handler(
 ::time::serde::format_description!(date_format, Date, "[year]-[month]-[day]");
 
 #[derive(Debug, Deserialize)]
-struct ToggleUserDate {
+struct ToggleDate {
     #[serde(with = "date_format")]
     date: Date,
-    user_public_id: Option<PublicId>,
+    user_public_id: PublicId,
+}
+
+async fn toggle_date_handler(
+    State(mm): State<ModelManager>,
+    Path(plan_public_id): Path<PublicId>,
+    Form(toggle_date): Form<ToggleDate>,
+) -> impl IntoResponse {
+    info!(
+        "{:<12} - toggle_date - {plan_public_id} - {}",
+        "HANDLER", toggle_date.date
+    );
 }
 
 // endregion: --- Date handler
@@ -118,15 +129,24 @@ fn Dates(
     // and disable submitting until response came back
     // --> Use Alpine JS here?
 
-    calender_month_dates(calendar_month).into_iter().map(|date| {
-        let user_public_id_include = HtmxInclude::from(htmx_ids::USER_PUBLIC_ID.clone()).to_string();
+    calender_month_dates(calendar_month)
+        .into_iter()
+        .map(|date| {
+            let user_public_id = htmx_ids::USER_PUBLIC_ID.clone();
+            let date_button_id = HtmxInput::new(HtmxId::new(&format!("date-{}", date)), "date");
 
-        view! {
-            <button hx-post="calendar" name="date" value=date.to_string() hx-include=user_public_id_include type="submit"
-                    class="ring-gray-400 hover:ring-1 h-12 {% if date.month() != calendar.month %}text-gray-500{% else %}text-white{% endif %}">
-            </button>
-        }
-    }).collect_view()
+            let include_targets =
+                HtmxInclude::from(vec![user_public_id, date_button_id.clone()]).to_string();
+
+            view! {
+                <button hx-post="calendar" hx-include=include_targets type="submit"
+                        class="ring-gray-400 hover:ring-1 h-12 text-white">
+                    <HtmxHiddenInput input=date_button_id value=date/>
+                    {date.day()}
+                </button>
+            }
+        })
+        .collect_view()
 }
 
 #[component]

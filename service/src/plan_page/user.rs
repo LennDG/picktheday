@@ -80,7 +80,7 @@ pub fn Users(plan: plans::Model, current_user: Option<PublicId>) -> impl IntoVie
     view! {
         <div>
             <HtmxHiddenInput input=htmx_ids::USER_PUBLIC_ID.clone() value=user_id/>
-            <div>"Placeholder"</div>
+            <div>"Users Placeholder"</div>
         </div>
     }
 }

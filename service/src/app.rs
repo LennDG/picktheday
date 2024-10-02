@@ -49,7 +49,7 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
                 <StyleSheetLink/>
                 // <link rel="stylesheet" type="text/css" href="/main.css"/>
 
-                <script src="https://unpkg.com/htmx.org@1.9.2/dist/htmx.min.js" defer/>
+                <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.min.js"></script>
                 <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer/>
                 //<AlpineGlobalState/>
 

@@ -3,10 +3,18 @@ layout {
         plugin location="zellij:tab-bar"
     }
     pane split_direction="vertical"  size="50%" {
-        pane {
-            name "web-server"
-            command "just"
-            args "watch"
+        pane split_direction="horizontal" {
+            pane size="80%" {
+                name "web-server"
+                command "just"
+                args "watch"
+            }
+            pane {
+                name "tailwind"
+                command "just"
+                args "tailwind_watch"
+            }
+            
         }
         pane split_direction="horizontal" size="50%" {
             pane focus=true size="50%" {
