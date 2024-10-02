@@ -17,6 +17,10 @@ pub enum Error {
     #[error("Invalid uri: {0}")]
     UriInvalid(#[from] http::uri::InvalidUri),
 
+    // -- Entity
+    #[error("Entity not found: {0}")]
+    EntityNotFound(#[from] entity::error::Error),
+
     // -- External
     #[error("Database error: {0}")]
     DbErr(#[from] entity::sea_orm::DbErr),

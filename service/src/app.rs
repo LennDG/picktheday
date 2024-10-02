@@ -1,9 +1,13 @@
 // use crate::leptos_axum::LeptosHtml;
-use axum::{response::Html, routing::get, Router};
+use axum::{
+    response::{Html, IntoResponse},
+    routing::get,
+    Router,
+};
 use entity::db::ModelManager;
 
+use http::StatusCode;
 use leptos::prelude::*;
-use leptos_meta::Meta;
 use tracing::info;
 
 pub fn routes(mm: ModelManager) -> Router {
@@ -23,7 +27,7 @@ pub async fn index_page() -> Html<String> {
     Html(content)
 }
 
-pub async fn not_found_page() -> Html<String> {
+pub async fn not_found_page() -> impl IntoResponse {
     let content = view! {
         <Page title="Pick The Day!".to_string()>
             <NotFound/>
@@ -31,7 +35,7 @@ pub async fn not_found_page() -> Html<String> {
     }
     .to_html();
 
-    Html(content)
+    (StatusCode::NOT_FOUND, Html(content)).into_response()
 }
 
 #[component]

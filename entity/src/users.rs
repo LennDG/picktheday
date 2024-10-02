@@ -65,3 +65,25 @@ impl IntoActiveModel<ActiveModel> for NewUser {
         }
     }
 }
+
+// region:	  --- Helper functions
+pub mod helpers {
+    use super::{Column, Entity, Model};
+    use crate::{
+        db::ModelManager,
+        error::{Error, Result},
+        types::PublicId,
+    };
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    pub async fn user_by_public_id(id: PublicId, mm: ModelManager) -> Result<Model> {
+        let user = Entity::find()
+            .filter(Column::PublicId.eq(id.clone()))
+            .one(mm.db())
+            .await?
+            .ok_or(Error::EntityNotFound(id.to_string()))?;
+
+        Ok(user)
+    }
+}
+// endregion: --- Helper functions

@@ -28,7 +28,8 @@ async fn main() {
     let app = Router::new()
         .merge(app::routes(mm.clone()))
         .merge(plan_page::routes(mm.clone()))
-        .fallback(file_and_error_handler);
+        .fallback(file_and_error_handler)
+        .layer(tower_http::compression::CompressionLayer::new().zstd(true));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
         .await

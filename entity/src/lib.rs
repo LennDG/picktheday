@@ -2,6 +2,7 @@
 pub extern crate sea_orm;
 
 pub mod db;
+pub mod error;
 pub mod prelude;
 pub mod types;
 

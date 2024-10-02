@@ -2,7 +2,10 @@
 
 use sea_orm::{entity::prelude::*, IntoActiveModel, Set};
 
-use crate::types::{Description, PlanName, PublicId};
+use crate::{
+    db::ModelManager,
+    types::{Description, PlanName, PublicId},
+};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "plans")]
@@ -51,3 +54,25 @@ impl IntoActiveModel<ActiveModel> for NewPlan {
         }
     }
 }
+
+// region:	  --- Helper functions
+pub mod helpers {
+    use super::{Column, Entity, Model};
+    use crate::{
+        db::ModelManager,
+        error::{Error, Result},
+        types::PublicId,
+    };
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    pub async fn plan_by_public_id(id: PublicId, mm: ModelManager) -> Result<Model> {
+        let plan = Entity::find()
+            .filter(Column::PublicId.eq(id.clone()))
+            .one(mm.db())
+            .await?
+            .ok_or(Error::EntityNotFound(id.to_string()))?;
+
+        Ok(plan)
+    }
+}
+// endregion: --- Helper functions

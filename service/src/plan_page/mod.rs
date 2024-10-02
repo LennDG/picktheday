@@ -5,24 +5,26 @@ use crate::{
 use axum::{
     body::Body,
     extract::{Path, State},
-    response::{Html, IntoResponse, Response},
+    response::{Html, IntoResponse, Redirect, Response},
     routing::{get, post},
     Form, Router,
 };
 use axum_htmx::HxRedirect;
+use calendar::{Calendar, CalendarMonth};
 use entity::{
     db::ModelManager,
     plans::{self, NewPlan},
     sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter},
-    types::PlanName,
+    types::{PlanName, PublicId},
 };
 use http::{StatusCode, Uri};
 use leptos::prelude::*;
 use serde::Deserialize;
-use tracing::debug;
+use tracing::{debug, info};
 use user::Users;
 
 mod calendar;
+mod htmx_ids;
 mod user;
 
 pub fn routes(mm: ModelManager) -> Router {
@@ -30,11 +32,13 @@ pub fn routes(mm: ModelManager) -> Router {
         "/plan",
         Router::new()
             .route("/", post(create_plan_handler))
+            .route("/:plan_slug", get(redirect_plan_handler))
             .nest(
-                "/:plan_slug",
+                "/:plan_slug/",
                 Router::new()
                     .route("/", get(plan_page_handler))
                     .merge(calendar::routes(mm.clone())),
+                //.nest("/calendar", calendar::routes(mm.clone())),
             )
             .with_state(mm),
     )
@@ -88,7 +92,7 @@ async fn create_plan_handler(
     let new_plan = NewPlan::try_from(plan_post)?;
     let new_plan_entity = new_plan.into_active_model().insert(mm.db()).await?;
 
-    let plan_url = format!("/plan/{}", new_plan_entity.public_id).parse::<Uri>()?;
+    let plan_url = format!("/plan/{}/", new_plan_entity.public_id).parse::<Uri>()?;
 
     // Return an empty body with the HX-Redirect header
     Ok(CreatePlanResponse { plan_url })
@@ -98,19 +102,15 @@ async fn create_plan_handler(
 // region:	  --- Plan page
 async fn plan_page_handler(
     State(mm): State<ModelManager>,
-    Path(page_slug): Path<String>,
+    Path(plan_public_id): Path<PublicId>,
 ) -> Result<impl IntoResponse> {
-    // -- Get the page
-    let plan = plans::Entity::find()
-        .filter(plans::Column::PublicId.eq(page_slug))
-        .one(mm.db())
-        .await?;
+    info!("{:<12} - plan_page_handler - {plan_public_id}", "HANDLER");
 
-    if let Some(plan) = plan {
-        Ok(Html(view! {<PlanPage plan=plan/>}.to_html()))
-    } else {
-        Ok(Html(NotFound().to_html()))
-    }
+    // -- Get the plan
+    let plan = plans::helpers::plan_by_public_id(plan_public_id, mm).await?;
+
+    let view = view! {<PlanPage plan=plan/>}.to_html();
+    Ok(Html(view))
 }
 
 #[component]
@@ -122,10 +122,22 @@ fn PlanPage(plan: plans::Model) -> impl IntoView {
             <div>
                 <h1>{plan_title}</h1>
             </div>
-            //<Calendar/>
+            <Calendar plan=plan.clone() user=None calendar_month=CalendarMonth::current_month()/>
             <Users plan=plan current_user=None/>
         </Page>
     }
 }
 
 // endregion: --- Plan page
+
+// region:	  --- Plan Redirect
+
+// TODO: Check if I can't do this with a Replace URL
+
+// It's important that the the url ends in a `/` otherwise the routes don't work
+async fn redirect_plan_handler(Path(page_slug): Path<String>) -> impl IntoResponse {
+    //let plan_url = format!("/plan/{}/", page_slug).parse::<Uri>()?;
+    let uri = &format!("/plan/{}/", page_slug);
+    Redirect::permanent(uri)
+}
+// endregion: --- Plan Redirect

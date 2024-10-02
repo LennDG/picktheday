@@ -2,5 +2,6 @@ pub mod app;
 pub mod config;
 pub mod error;
 pub mod fileserv;
+pub mod htmx_helpers;
 pub mod plan_page;
 pub mod util_components;
