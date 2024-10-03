@@ -1,11 +1,10 @@
 use derive_more::derive::Display;
 use sea_orm::{DbErr, DeriveValueType, QueryResult, Value};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use thiserror::Error;
 
 // region:	  --- Public ID
-#[derive(Debug, Clone, PartialEq, Eq, Display, Deserialize, DeriveValueType)]
-#[serde(transparent)]
+#[derive(Debug, Clone, PartialEq, Eq, Display, DeriveValueType)]
 pub struct PublicId(String);
 
 #[derive(Error, Debug, Clone, PartialEq)]
@@ -14,7 +13,10 @@ pub struct PublicIdError(String);
 
 impl PublicId {
     pub fn new(public_id: &str) -> Result<Self, PublicIdError> {
-        if public_id.len() <= 32 && public_id.chars().all(char::is_alphanumeric) {
+        if public_id.len() <= 32
+            && !public_id.is_empty()
+            && public_id.chars().all(char::is_alphanumeric)
+        {
             Ok(PublicId(public_id.to_string()))
         } else {
             Err(PublicIdError(public_id.to_string()))
@@ -34,6 +36,16 @@ impl Default for PublicId {
             .collect();
 
         Self(generated_string)
+    }
+}
+
+impl<'de> Deserialize<'de> for PublicId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: String = Deserialize::deserialize(deserializer)?;
+        Self::new(&s).map_err(|err| serde::de::Error::custom(format!("{}", err)))
     }
 }
 // endregion: --- Public ID
