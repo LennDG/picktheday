@@ -61,9 +61,7 @@ async fn get_calendar_handler(
         None
     };
 
-    let view = view! {
-        <Calendar plan=plan user=user calendar_month=calendar_month/>
-    }
+    let view = view! { <Calendar plan=plan user=user calendar_month=calendar_month /> }
     .to_html();
     Ok(Html(view))
 }
@@ -103,13 +101,22 @@ pub fn Calendar(
 
     view! {
         <div id=calender_id.clone().to_string() class="container mx-auto my-8">
-            <SwitchMonthButton next_or_previous=SwitchMonth::Previous calendar_month=calendar_month calender_id=calender_id.clone()/>
-            {calendar_month.month.to_string()} {calendar_month.year}
-            <SwitchMonthButton next_or_previous=SwitchMonth::Next calendar_month=calendar_month calender_id=calender_id.clone() />
+            <SwitchMonthButton
+                next_or_previous=SwitchMonth::Previous
+                calendar_month=calendar_month
+                calender_id=calender_id.clone()
+            />
+            {calendar_month.month.to_string()}
+            {calendar_month.year}
+            <SwitchMonthButton
+                next_or_previous=SwitchMonth::Next
+                calendar_month=calendar_month
+                calender_id=calender_id.clone()
+            />
             <div class="grid grid-cols-7 gap-1 items-center justify-center">
-                <Weekdays/>
+                <Weekdays />
                 <div class="col-span-7 border-b-2 border-gray-400"></div>
-                <Dates plan=plan user=user calendar_month=calendar_month/>
+                <Dates plan=plan user=user calendar_month=calendar_month />
             </div>
         </div>
     }
@@ -139,9 +146,13 @@ fn Dates(
                 HtmxInclude::from(vec![user_public_id, date_button_id.clone()]).to_string();
 
             view! {
-                <button hx-post="calendar" hx-include=include_targets type="submit"
-                        class="ring-gray-400 hover:ring-1 h-12 text-white">
-                    <HtmxHiddenInput input=date_button_id value=date/>
+                <button
+                    hx-post="calendar"
+                    hx-include=include_targets
+                    type="submit"
+                    class="ring-gray-400 hover:ring-1 h-12 text-white"
+                >
+                    <HtmxHiddenInput input=date_button_id value=date />
                     {date.day()}
                 </button>
             }
@@ -180,10 +191,16 @@ fn SwitchMonthButton(
     .to_string();
 
     view! {
-        <HtmxHiddenInput input=switch_month_id value=switch_calendar_month.month/>
-        <HtmxHiddenInput input=switch_year_id value=switch_calendar_month.year/>
-        <button hx-get="calendar" hx-swap="outerHTML" hx-include=include_targets
-                hx-target=calendar_target>{button_label}</button>
+        <HtmxHiddenInput input=switch_month_id value=switch_calendar_month.month />
+        <HtmxHiddenInput input=switch_year_id value=switch_calendar_month.year />
+        <button
+            hx-get="calendar"
+            hx-swap="outerHTML"
+            hx-include=include_targets
+            hx-target=calendar_target
+        >
+            {button_label}
+        </button>
     }
 }
 
@@ -193,11 +210,7 @@ fn Weekdays() -> impl IntoView {
     WEEKDAYS
         .into_iter()
         .map(|day| {
-            view! {
-                <div class="text-gray-400 font-bold">
-                {day}
-                </div>
-            }
+            view! { <div class="text-gray-400 font-bold">{day}</div> }
         })
         .collect_view()
 }

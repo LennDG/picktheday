@@ -54,14 +54,29 @@ impl<'de> Deserialize<'de> for PublicId {
 #[derive(Debug, Display, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ConstrainedString<const MAX_LEN: usize>(String);
 
-#[derive(Error, Debug, Clone, PartialEq)]
+#[derive(Error, Debug, Clone)]
+pub enum ConstrainedStringError {
+    #[error("String too long: maximum {0} characters")]
+    ConstrainedStringTooLong(usize),
+
+    #[error("String empty")]
+    ConstrainedStringEmpty(),
+}
+
+#[derive(Error, Debug, Clone)]
 #[error("String too long: maximum {0} characters")]
-pub struct ConstrainedStringError(usize);
+pub struct ConstrainedStringTooLong(usize);
+
+#[derive(Error, Debug, Clone)]
+#[error("String empty")]
+pub struct ConstrainedStringEmpty();
 
 impl<const MAX_LEN: usize> ConstrainedString<MAX_LEN> {
     pub fn new(text: &str) -> Result<Self, ConstrainedStringError> {
         if text.len() > MAX_LEN {
-            Err(ConstrainedStringError(MAX_LEN))
+            Err(ConstrainedStringError::ConstrainedStringTooLong(MAX_LEN))
+        } else if text.is_empty() {
+            Err(ConstrainedStringError::ConstrainedStringEmpty())
         } else {
             Ok(Self(text.to_string()))
         }
@@ -111,6 +126,16 @@ impl<const MAX_LEN: usize> sea_orm::sea_query::ValueType for ConstrainedString<M
 impl<const MAX_LEN: usize> sea_orm::sea_query::Nullable for ConstrainedString<MAX_LEN> {
     fn null() -> sea_orm::Value {
         sea_orm::Value::String(None)
+    }
+}
+
+impl<'de, const MAX_LEN: usize> Deserialize<'de> for ConstrainedString<MAX_LEN> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: String = Deserialize::deserialize(deserializer)?;
+        Self::new(&s).map_err(|err| serde::de::Error::custom(format!("{}", err)))
     }
 }
 

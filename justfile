@@ -45,6 +45,7 @@ tailwind:
 dependencies:
     rustup target add wasm32-unknown-unknown
     cargo install sea-orm-cli@1.0.0-rc.5
+    cd service && npm install
 
 start_db:
     docker compose up -d postgres

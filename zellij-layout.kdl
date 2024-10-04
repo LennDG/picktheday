@@ -9,7 +9,7 @@ layout {
                 command "just"
                 args "watch"
             }
-            pane {
+            pane size="20%"{
                 name "tailwind"
                 command "just"
                 args "tailwind_watch"

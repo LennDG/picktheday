@@ -5,6 +5,7 @@ use sea_orm::{entity::prelude::*, IntoActiveModel, Set};
 use crate::{
     db::ModelManager,
     types::{Description, PlanName, PublicId},
+    users,
 };
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
@@ -52,6 +53,12 @@ impl IntoActiveModel<ActiveModel> for NewPlan {
             ctime: Set(time::OffsetDateTime::now_utc()),
             ..Default::default()
         }
+    }
+}
+
+impl Model {
+    pub async fn get_users(&self, mm: ModelManager) -> crate::error::Result<Vec<users::Model>> {
+        Ok(self.find_related(users::Entity).all(mm.db()).await?)
     }
 }
 

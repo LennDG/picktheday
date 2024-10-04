@@ -16,6 +16,7 @@ use entity::{
     plans::{self, NewPlan},
     sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter},
     types::{PlanName, PublicId},
+    users,
 };
 use http::{StatusCode, Uri};
 use leptos::prelude::*;
@@ -37,8 +38,8 @@ pub fn routes(mm: ModelManager) -> Router {
                 "/:plan_slug/",
                 Router::new()
                     .route("/", get(plan_page_handler))
-                    .merge(calendar::routes(mm.clone())),
-                //.nest("/calendar", calendar::routes(mm.clone())),
+                    .merge(calendar::routes(mm.clone()))
+                    .merge(user::routes(mm.clone())),
             )
             .with_state(mm),
     )
@@ -47,16 +48,14 @@ pub fn routes(mm: ModelManager) -> Router {
 // region:	  --- Plan creation
 #[derive(Debug, Deserialize)]
 struct PlanPost {
-    new_plan: String,
+    plan_name: PlanName,
 }
 
 impl TryFrom<PlanPost> for NewPlan {
     type Error = Error;
 
     fn try_from(plan_post: PlanPost) -> Result<Self> {
-        let plan_name = PlanName::new(&plan_post.new_plan)
-            .map_err(|err| Error::NewPlanInvalid(err.to_string()))?;
-        Ok(NewPlan::new(plan_name, None))
+        Ok(NewPlan::new(plan_post.plan_name, None))
     }
 }
 
@@ -81,13 +80,8 @@ async fn create_plan_handler(
 ) -> Result<CreatePlanResponse> {
     debug!(
         "{:<12} - create_plan_handler - {}",
-        "HANDLER", plan_post.new_plan
+        "HANDLER", plan_post.plan_name
     );
-
-    // -- Check if string is not empty
-    if plan_post.new_plan.is_empty() {
-        return Err(Error::NewPlanInvalid("Name empty".to_string()));
-    }
 
     let new_plan = NewPlan::try_from(plan_post)?;
     let new_plan_entity = new_plan.into_active_model().insert(mm.db()).await?;
@@ -107,14 +101,17 @@ async fn plan_page_handler(
     info!("{:<12} - plan_page_handler - {plan_public_id}", "HANDLER");
 
     // -- Get the plan
-    let plan = plans::helpers::plan_by_public_id(plan_public_id, mm).await?;
+    let plan = plans::helpers::plan_by_public_id(plan_public_id, mm.clone()).await?;
 
-    let view = view! {<PlanPage plan=plan/>}.to_html();
+    // -- Get the users
+    let users = plan.get_users(mm).await?;
+
+    let view = view! { <PlanPage plan=plan users=users /> }.to_html();
     Ok(Html(view))
 }
 
 #[component]
-fn PlanPage(plan: plans::Model) -> impl IntoView {
+fn PlanPage(plan: plans::Model, users: Vec<users::Model>) -> impl IntoView {
     let plan_title = plan.name.to_string();
 
     view! {
@@ -122,8 +119,8 @@ fn PlanPage(plan: plans::Model) -> impl IntoView {
             <div>
                 <h1>{plan_title}</h1>
             </div>
-            <Calendar plan=plan.clone() user=None calendar_month=CalendarMonth::current_month()/>
-            <Users plan=plan current_user=None/>
+            <Calendar plan=plan.clone() user=None calendar_month=CalendarMonth::current_month() />
+            <Users users=users current_user=None />
         </Page>
     }
 }
