@@ -1,8 +1,7 @@
 # docker-compose.yml
-version: '3'
 services:
   postgres:
-    image: postgres:16
+    image: postgres:17
     container_name: postgres
     environment:
       POSTGRES_USER: dev
@@ -12,6 +11,17 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+
+  test-postgres:
+    image: postgres:17
+    container_name: test-postgres
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: testdb
+    ports:
+      - "2345:5432"
+
 volumes:
   pgdata:
     name: picktheday_dev_db

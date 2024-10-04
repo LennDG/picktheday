@@ -7,7 +7,9 @@ watch: kill
     @sleep 2
     cargo watch -q -c -w service/ -w entity/ -x "run -p picktheday"
 
-test:
+test: wait_for_test_db cargo_test stop_test_db
+
+cargo_test:
     cargo test --all-features -- --nocapture
 
 migrate:
@@ -32,7 +34,9 @@ kill:
 
 fix:
     cargo fmt --all
+    leptosfmt service
     cargo fix --lib --allow-dirty -p picktheday
+    cargo fix --lib --allow-dirty -p entity
 
 build:
     cargo leptos build --release
@@ -50,23 +54,35 @@ dependencies:
 start_db:
     docker compose up -d postgres
 
+start_test_db:
+    docker compose up -d test-postgres
+
 stop_db:
     docker compose down
+
+stop_test_db:
+    docker compose down test-postgres
 
 restart_db: stop_db start_db
 
 status_db:
     @docker ps --filter "name=postgres" --filter "status=running" --format "{{{{.Names}} is running on port {{{{.Ports}}"
 
-test_db: start_db
+wait_for_db: start_db
     @until docker exec -it postgres pg_isready -U dev > /dev/null; do \
       echo "Waiting for postgres..."; \
       sleep 2; \
     done
     @echo "PostgreSQL is ready on port 5432!"
 
+wait_for_test_db: start_test_db
+    @until docker exec -it test-postgres pg_isready -U dev > /dev/null; do \
+      echo "Waiting for postgres..."; \
+      sleep 2; \
+    done
+
 reset_db: stop_db
     docker volume rm picktheday_dev_db
 
-connect_db: test_db
+connect_db: wait_for_db
     @PGPASSWORD=devpassword psql -h localhost -p 5432 -U dev -d devdb

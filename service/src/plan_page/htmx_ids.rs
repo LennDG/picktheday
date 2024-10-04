@@ -8,3 +8,8 @@ use once_cell::sync::Lazy;
 pub static USER_PUBLIC_ID: Lazy<HtmxInput> =
     Lazy::new(|| HtmxInput::new(HtmxId::new("user_public_id"), "user_public_id"));
 // endregion: --- Global htmx inputs
+
+// region:	  --- Global htmx IDs
+pub static CALENDAR_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar"));
+pub static CALENDAR_CONTAINER: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar_container"));
+// endregion: --- Global htmx IDs

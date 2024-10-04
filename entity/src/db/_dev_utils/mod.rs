@@ -9,9 +9,13 @@ pub async fn init_test() -> ModelManager {
     let mm = INIT
         .get_or_init(|| async {
             // NOTE: Rare occasion where unwrap is kind of ok.
-            ModelManager::new_test("postgres://dev:devpassword@localhost/testdb".to_string())
-                .await
-                .unwrap()
+            let mm = ModelManager::new_test(
+                "postgres://dev:devpassword@localhost:2345/testdb".to_string(),
+            )
+            .await
+            .unwrap();
+            mm.run_migrations().await.expect("Migrations failed!");
+            mm
         })
         .await;
 

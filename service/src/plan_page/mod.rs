@@ -1,5 +1,5 @@
 use crate::{
-    app::{NotFound, Page},
+    app::Page,
     error::{Error, Result},
 };
 use axum::{
@@ -124,7 +124,6 @@ fn PlanPage(plan: plans::Model, users: Vec<users::Model>) -> impl IntoView {
         </Page>
     }
 }
-
 // endregion: --- Plan page
 
 // region:	  --- Plan Redirect

@@ -1,18 +1,26 @@
 use axum::{
     debug_handler,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     response::{Html, IntoResponse},
-    routing::get,
+    routing::{get, post},
     Form, Router,
 };
-use entity::{db::ModelManager, plans, types::PublicId, users};
+use entity::{
+    dates::{self, NewDate},
+    db::ModelManager,
+    plans,
+    sea_orm::{ActiveModelTrait, IntoActiveModel},
+    types::PublicId,
+    users,
+};
+use http::StatusCode;
 use leptos::prelude::*;
 use serde::{Deserialize, Deserializer, Serialize};
 use time::{Date, Month, OffsetDateTime, Weekday};
 use tracing::info;
 
 use crate::{
-    error::{Error, Result},
+    error::Result,
     htmx_helpers::{HtmxId, HtmxInclude, HtmxInput, HtmxTarget},
     plan_page::htmx_ids,
     util_components::HtmxHiddenInput,
@@ -22,7 +30,8 @@ pub fn routes(mm: ModelManager) -> Router<entity::db::ModelManager> {
     Router::new().nest(
         "/calendar",
         Router::new()
-            .route("/", get(get_calendar_handler).post(toggle_date_handler))
+            .route("/", get(get_calendar_handler))
+            .route("/date", post(add_date_handler).delete(delete_date_handler))
             .with_state(mm),
     )
 }
@@ -45,7 +54,7 @@ async fn get_calendar_handler(
 ) -> Result<impl IntoResponse> {
     info!("{:<12} - calendar - {plan_public_id}", "HANDLER");
 
-    // -- Calendar Month (Can I serde that?)
+    // -- Calendar Month
     let calendar_month = CalendarMonth {
         month: calendar_get.month,
         year: calendar_get.year,
@@ -61,14 +70,13 @@ async fn get_calendar_handler(
         None
     };
 
-    let view = view! { <Calendar plan=plan user=user calendar_month=calendar_month /> }
-    .to_html();
+    let view = view! { <Calendar plan=plan user=user calendar_month=calendar_month /> }.to_html();
     Ok(Html(view))
 }
 
 // endregion: --- Calendar handler
 
-// region:	  --- Date handler
+// region:	  --- Date handlers
 ::time::serde::format_description!(date_format, Date, "[year]-[month]-[day]");
 
 #[derive(Debug, Deserialize)]
@@ -78,18 +86,44 @@ struct ToggleDate {
     user_public_id: PublicId,
 }
 
-async fn toggle_date_handler(
+async fn add_date_handler(
     State(mm): State<ModelManager>,
     Path(plan_public_id): Path<PublicId>,
-    Form(toggle_date): Form<ToggleDate>,
-) -> impl IntoResponse {
+    Form(date_post): Form<ToggleDate>,
+) -> Result<impl IntoResponse> {
     info!(
-        "{:<12} - toggle_date - {plan_public_id} - {}",
-        "HANDLER", toggle_date.date
+        "{:<12} - add_date - {plan_public_id} - {}",
+        "HANDLER", date_post.date
     );
+
+    let user_id = users::helpers::user_by_public_id(date_post.user_public_id, mm.clone())
+        .await?
+        .id;
+
+    let _ = NewDate::new(date_post.date, user_id)
+        .into_active_model()
+        .insert(mm.db())
+        .await?;
+
+    Ok((StatusCode::CREATED).into_response())
 }
 
-// endregion: --- Date handler
+async fn delete_date_handler(
+    State(mm): State<ModelManager>,
+    Path(plan_public_id): Path<PublicId>,
+    Query(date_delete): Query<ToggleDate>,
+) -> Result<impl IntoResponse> {
+    info!(
+        "{:<12} - delete_date - {plan_public_id} - {}",
+        "HANDLER", date_delete.date
+    );
+
+    dates::helpers::delete_date_for_user(date_delete.user_public_id, date_delete.date, mm).await?;
+
+    Ok((StatusCode::OK).into_response())
+}
+
+// endregion: --- Date handlers
 
 #[component]
 pub fn Calendar(
@@ -97,26 +131,27 @@ pub fn Calendar(
     user: Option<users::Model>,
     calendar_month: CalendarMonth,
 ) -> impl IntoView {
-    let calender_id = HtmxId::new("calender");
+    let calender_id = htmx_ids::CALENDAR_ID.clone().to_string();
+    let calendar_container_id = htmx_ids::CALENDAR_CONTAINER.clone().to_string();
 
     view! {
-        <div id=calender_id.clone().to_string() class="container mx-auto my-8">
-            <SwitchMonthButton
-                next_or_previous=SwitchMonth::Previous
-                calendar_month=calendar_month
-                calender_id=calender_id.clone()
-            />
-            {calendar_month.month.to_string()}
-            {calendar_month.year}
-            <SwitchMonthButton
-                next_or_previous=SwitchMonth::Next
-                calendar_month=calendar_month
-                calender_id=calender_id.clone()
-            />
-            <div class="grid grid-cols-7 gap-1 items-center justify-center">
-                <Weekdays />
-                <div class="col-span-7 border-b-2 border-gray-400"></div>
-                <Dates plan=plan user=user calendar_month=calendar_month />
+        <div id=calendar_container_id>
+            <div id=calender_id.clone() class="container mx-auto my-8">
+                <SwitchMonthButton
+                    next_or_previous=SwitchMonth::Previous
+                    calendar_month=calendar_month
+                />
+                {calendar_month.month.to_string()}
+                {calendar_month.year}
+                <SwitchMonthButton
+                    next_or_previous=SwitchMonth::Next
+                    calendar_month=calendar_month
+                />
+                <div class="grid grid-cols-7 gap-1 items-center justify-center">
+                    <Weekdays />
+                    <div class="col-span-7 border-b-2 border-gray-400"></div>
+                    <Dates plan=plan user=user calendar_month=calendar_month />
+                </div>
             </div>
         </div>
     }
@@ -136,35 +171,80 @@ fn Dates(
     // and disable submitting until response came back
     // --> Use Alpine JS here?
 
-    calender_month_dates(calendar_month)
-        .into_iter()
-        .map(|date| {
-            let user_public_id = htmx_ids::USER_PUBLIC_ID.clone();
-            let date_button_id = HtmxInput::new(HtmxId::new(&format!("date-{}", date)), "date");
+    if user.is_some() {
+        calender_month_dates(calendar_month)
+            .into_iter()
+            .map(|date| {
+                view! {
+                    <InteractiveDate date=date/>
+                }
+            })
+            .collect_view()
+            .into_any()
+    } else {
+        calender_month_dates(calendar_month)
+            .into_iter()
+            .map(|date| {
+                view! {
+                    <NonInteractiveDate date=date/>
+                }
+            })
+            .collect_view()
+            .into_any()
+    }
+}
 
-            let include_targets =
-                HtmxInclude::from(vec![user_public_id, date_button_id.clone()]).to_string();
+#[component]
+fn NonInteractiveDate(date: Date) -> impl IntoView {
+    view! {
+        <button type="button" class="ring-gray-400 hover:ring-1 h-12 text-white w-full">
+            {date.day()}
+        </button>
+    }
+}
 
-            view! {
-                <button
-                    hx-post="calendar"
-                    hx-include=include_targets
-                    type="submit"
-                    class="ring-gray-400 hover:ring-1 h-12 text-white"
-                >
-                    <HtmxHiddenInput input=date_button_id value=date />
-                    {date.day()}
-                </button>
-            }
-        })
-        .collect_view()
+#[component]
+fn InteractiveDate(date: Date) -> impl IntoView {
+    let user_public_id = htmx_ids::USER_PUBLIC_ID.clone();
+    let date_button_id = HtmxInput::new(HtmxId::new(&format!("date-{}", date)), "date");
+
+    let include_targets =
+        HtmxInclude::from(vec![user_public_id, date_button_id.clone()]).to_string();
+
+    view! {
+        <div x-data="{isDelete : false}">
+            <HtmxHiddenInput input=date_button_id value=date />
+            <button
+                x-show="!isDelete"
+                hx-include=include_targets.clone()
+                hx-swap="none"
+                type="button"
+                class="ring-gray-400 hover:ring-1 h-12 text-white w-full"
+                x-on:click="isDelete = !isDelete"
+                hx-post="calendar/date"
+            >
+                {date.day()}
+            </button>
+            <button
+                x-show="isDelete"
+                hx-include=include_targets
+                hx-swap="none"
+                type="button"
+                class="ring-gray-400 hover:ring-1 h-12 text-white w-full"
+                x-on:click="isDelete = !isDelete"
+                hx-delete="calendar/date"
+            >
+                {date.day()}
+            </button>
+
+        </div>
+    }
 }
 
 #[component]
 fn SwitchMonthButton(
     next_or_previous: SwitchMonth,
     calendar_month: CalendarMonth,
-    calender_id: HtmxId,
 ) -> impl IntoView {
     let (switch_month_id, switch_year_id, switch_calendar_month, button_label) =
         match next_or_previous {
@@ -182,7 +262,7 @@ fn SwitchMonthButton(
             ),
         };
 
-    let calendar_target = HtmxTarget::from(calender_id).to_string();
+    let calendar_target = HtmxTarget::from(htmx_ids::CALENDAR_ID.clone()).to_string();
     let include_targets = HtmxInclude::from(vec![
         switch_month_id.clone(),
         switch_year_id.clone(),

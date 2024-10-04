@@ -1,7 +1,10 @@
 use crate::{
-    error::{Error, Result},
+    error::Result,
     htmx_helpers::{HtmxId, HtmxTarget},
-    plan_page::htmx_ids,
+    plan_page::{
+        calendar::{self, Calendar, CalendarMonth},
+        htmx_ids,
+    },
     util_components::HtmxHiddenInput,
 };
 use axum::{
@@ -40,17 +43,19 @@ struct UserPost {
 }
 
 #[derive(Debug)]
-struct CreateUserResponse {
+struct UpdateUserResponse {
+    plan: plans::Model,
     users: Vec<users::Model>,
-    current_user: PublicId,
+    current_user: users::Model,
+    current_user_public_id: PublicId,
 }
 
-impl IntoResponse for CreateUserResponse {
+impl IntoResponse for UpdateUserResponse {
     fn into_response(self) -> Response {
         let status = StatusCode::CREATED;
         let view = Html(
-            view! { <Users users=self.users current_user=Some(self.current_user) /> }
-            .to_html(),
+            view! { <UsersUpdate plan=self.plan users=self.users current_user_public_id=self.current_user_public_id current_user=self.current_user/> }
+                .to_html(),
         );
 
         (status, view).into_response()
@@ -83,9 +88,11 @@ async fn create_user_handler(
         //-- Get all users
         let users = plan_model.get_users(mm).await?;
 
-        Ok(CreateUserResponse {
+        Ok(UpdateUserResponse {
+            plan: plan_model,
             users,
-            current_user: new_user_model.public_id,
+            current_user_public_id: new_user_model.public_id.clone(),
+            current_user: new_user_model,
         }
         .into_response())
     } else {
@@ -93,6 +100,24 @@ async fn create_user_handler(
     }
 }
 // endregion: --- User handlers
+
+#[component]
+fn UsersUpdate(
+    plan: plans::Model,
+    users: Vec<users::Model>,
+    current_user_public_id: PublicId,
+    current_user: users::Model,
+) -> impl IntoView {
+    let calendar_container_id = htmx_ids::CALENDAR_CONTAINER.clone().to_string();
+    let calendar_month = CalendarMonth::current_month();
+
+    view! {
+        <Users users=users current_user=Some(current_user_public_id)/>
+        <div id=calendar_container_id hx-swap-oob="innerHTML">
+        <Calendar plan=plan calendar_month=calendar_month user=Some(current_user)/>
+        </div>
+    }
+}
 
 #[component]
 pub fn Users(users: Vec<users::Model>, current_user: Option<PublicId>) -> impl IntoView {
@@ -108,7 +133,6 @@ pub fn Users(users: Vec<users::Model>, current_user: Option<PublicId>) -> impl I
             <HtmxHiddenInput input=htmx_ids::USER_PUBLIC_ID.clone() value=user_id />
             <UserInput users_id=users_id />
             <UserList users=users />
-
         </div>
     }
 }

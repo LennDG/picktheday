@@ -1,8 +1,6 @@
 pub use self::error::{Error, Result};
-use dotenvy::dotenv;
 use migration::MigratorTrait;
 use sea_orm::{entity::*, ConnectOptions, Database, DatabaseConnection};
-use std::env;
 use std::time::Duration;
 
 pub mod error;
@@ -42,7 +40,6 @@ impl ModelManager {
 }
 
 pub async fn get_test_connection(url: String) -> Result<DatabaseConnection> {
-    let url = database_url_for_env();
     let mut opt = ConnectOptions::new(url);
 
     opt.max_connections(1)
@@ -56,7 +53,6 @@ pub async fn get_test_connection(url: String) -> Result<DatabaseConnection> {
 }
 
 pub async fn get_connection_pool(url: String) -> Result<DatabaseConnection> {
-    let url = database_url_for_env();
     let mut opt = ConnectOptions::new(url);
 
     opt.max_connections(100)
@@ -67,11 +63,6 @@ pub async fn get_connection_pool(url: String) -> Result<DatabaseConnection> {
         .max_lifetime(Duration::from_secs(8));
 
     Ok(Database::connect(opt).await?)
-}
-
-fn database_url_for_env() -> String {
-    dotenv().ok();
-    env::var("DATABASE_URL").expect("DATABASE_URL must be set")
 }
 
 // region:    --- Tests

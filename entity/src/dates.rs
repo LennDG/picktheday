@@ -53,3 +53,31 @@ impl IntoActiveModel<ActiveModel> for NewDate {
         }
     }
 }
+
+// region:	  --- Helpers
+pub mod helpers {
+    use super::{Column, Entity};
+    use crate::{db::ModelManager, error::Result, types::PublicId, users};
+
+    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    pub async fn delete_date_for_user(
+        user_public_id: PublicId,
+        date: time::Date,
+        mm: ModelManager,
+    ) -> Result<()> {
+        // TODO: Make this a single query instead of 2
+
+        let user = users::helpers::user_by_public_id(user_public_id, mm.clone()).await?;
+
+        Entity::delete_many()
+            .filter(Column::UserId.eq(user.id))
+            .filter(Column::Date.eq(date))
+            .exec(mm.db())
+            .await?;
+
+        Ok(())
+    }
+}
+
+// endregion: --- Helpers
