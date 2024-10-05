@@ -119,6 +119,7 @@ fn PlanPage(plan: plans::Model, users: Vec<users::Model>) -> impl IntoView {
             <div>
                 <h1>{plan_title}</h1>
             </div>
+
             <Calendar plan=plan.clone() user=None calendar_month=CalendarMonth::current_month() />
             <Users users=users current_user=None />
         </Page>

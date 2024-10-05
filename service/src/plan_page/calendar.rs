@@ -14,7 +14,8 @@ use entity::{
     users,
 };
 use http::StatusCode;
-use leptos::prelude::*;
+use leptos::{either::Either, prelude::*};
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize};
 use time::{Date, Month, OffsetDateTime, Weekday};
 use tracing::info;
@@ -125,17 +126,20 @@ async fn delete_date_handler(
 
 // endregion: --- Date handlers
 
+static CALENDAR_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar"));
+static CALENDAR_CONTAINER: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar_container"));
 #[component]
 pub fn Calendar(
     plan: plans::Model,
     user: Option<users::Model>,
     calendar_month: CalendarMonth,
 ) -> impl IntoView {
-    let calender_id = htmx_ids::CALENDAR_ID.clone().to_string();
-    let calendar_container_id = htmx_ids::CALENDAR_CONTAINER.clone().to_string();
+    let calender_id = CALENDAR_ID.clone().to_string();
+    let calendar_container_id = CALENDAR_CONTAINER.clone().to_string();
 
     view! {
-        <div id=calendar_container_id>
+        // Any time a Calendar component is received on the browser, it should be swapped in here
+        <div id=calendar_container_id hx-swap-oob="true">
             <div id=calender_id.clone() class="container mx-auto my-8">
                 <SwitchMonthButton
                     next_or_previous=SwitchMonth::Previous
@@ -170,27 +174,24 @@ fn Dates(
     // TODO: implement the date handler and do client side stuff to immediately show clicked status
     // and disable submitting until response came back
     // --> Use Alpine JS here?
-
     if user.is_some() {
-        calender_month_dates(calendar_month)
-            .into_iter()
-            .map(|date| {
-                view! {
-                    <InteractiveDate date=date/>
-                }
-            })
-            .collect_view()
-            .into_any()
+        Either::Left(
+            calender_month_dates(calendar_month)
+                .into_iter()
+                .map(|date| {
+                    view! { <InteractiveDate date=date /> }
+                })
+                .collect_view(),
+        )
     } else {
-        calender_month_dates(calendar_month)
-            .into_iter()
-            .map(|date| {
-                view! {
-                    <NonInteractiveDate date=date/>
-                }
-            })
-            .collect_view()
-            .into_any()
+        Either::Right(
+            calender_month_dates(calendar_month)
+                .into_iter()
+                .map(|date| {
+                    view! { <NonInteractiveDate date=date /> }
+                })
+                .collect_view(),
+        )
     }
 }
 
@@ -262,7 +263,7 @@ fn SwitchMonthButton(
             ),
         };
 
-    let calendar_target = HtmxTarget::from(htmx_ids::CALENDAR_ID.clone()).to_string();
+    let calendar_target = HtmxTarget::from(CALENDAR_ID.clone()).to_string();
     let include_targets = HtmxInclude::from(vec![
         switch_month_id.clone(),
         switch_year_id.clone(),

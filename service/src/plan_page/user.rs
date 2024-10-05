@@ -2,7 +2,7 @@ use crate::{
     error::Result,
     htmx_helpers::{HtmxId, HtmxTarget},
     plan_page::{
-        calendar::{self, Calendar, CalendarMonth},
+        calendar::{Calendar, CalendarMonth},
         htmx_ids,
     },
     util_components::HtmxHiddenInput,
@@ -54,8 +54,15 @@ impl IntoResponse for UpdateUserResponse {
     fn into_response(self) -> Response {
         let status = StatusCode::CREATED;
         let view = Html(
-            view! { <UsersUpdate plan=self.plan users=self.users current_user_public_id=self.current_user_public_id current_user=self.current_user/> }
-                .to_html(),
+            view! {
+                <UsersUpdate
+                    plan=self.plan
+                    users=self.users
+                    current_user_public_id=self.current_user_public_id
+                    current_user=self.current_user
+                />
+            }
+            .to_html(),
         );
 
         (status, view).into_response()
@@ -108,14 +115,11 @@ fn UsersUpdate(
     current_user_public_id: PublicId,
     current_user: users::Model,
 ) -> impl IntoView {
-    let calendar_container_id = htmx_ids::CALENDAR_CONTAINER.clone().to_string();
     let calendar_month = CalendarMonth::current_month();
 
     view! {
-        <Users users=users current_user=Some(current_user_public_id)/>
-        <div id=calendar_container_id hx-swap-oob="innerHTML">
-        <Calendar plan=plan calendar_month=calendar_month user=Some(current_user)/>
-        </div>
+        <Users users=users current_user=Some(current_user_public_id) />
+        <Calendar plan=plan calendar_month=calendar_month user=Some(current_user) />
     }
 }
 
