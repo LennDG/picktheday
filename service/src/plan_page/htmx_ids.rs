@@ -10,4 +10,5 @@ pub static USER_PUBLIC_ID: Lazy<HtmxInput> =
 // endregion: --- Global htmx inputs
 
 // region:	  --- Global htmx IDs
+pub static CALENDAR_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar"));
 // endregion: --- Global htmx IDs

@@ -4,7 +4,7 @@ use serde::{Deserialize, Deserializer};
 use thiserror::Error;
 
 // region:	  --- Public ID
-#[derive(Debug, Clone, PartialEq, Eq, Display, DeriveValueType)]
+#[derive(Debug, Clone, PartialEq, Eq, Display, DeriveValueType, Hash)]
 pub struct PublicId(String);
 
 #[derive(Error, Debug, Clone, PartialEq)]

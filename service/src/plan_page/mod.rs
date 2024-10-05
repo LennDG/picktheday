@@ -12,6 +12,7 @@ use axum::{
 use axum_htmx::HxRedirect;
 use calendar::{Calendar, CalendarMonth};
 use entity::{
+    dates,
     db::ModelManager,
     plans::{self, NewPlan},
     sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter},
@@ -101,27 +102,34 @@ async fn plan_page_handler(
     info!("{:<12} - plan_page_handler - {plan_public_id}", "HANDLER");
 
     // -- Get the plan
-    let plan = plans::helpers::plan_by_public_id(plan_public_id, mm.clone()).await?;
+    let plan = plans::helpers::plan_by_public_id(plan_public_id.clone(), mm.clone()).await?;
 
-    // -- Get the users
-    let users = plan.get_users(mm).await?;
+    // -- Get the users with dates
+    let users_with_dates =
+        users::helpers::get_users_with_date_for_plan_public_id(plan_public_id, mm).await;
 
-    let view = view! { <PlanPage plan=plan users=users /> }.to_html();
+    warn!("{:<12} - {:?}", "HANDLER", users_with_dates);
+
+    let view =
+        view! { <PlanPage plan=plan users_with_dates=users_with_dates.unwrap() /> }.to_html();
     Ok(Html(view))
 }
 
 #[component]
-fn PlanPage(plan: plans::Model, users: Vec<users::Model>) -> impl IntoView {
+fn PlanPage(plan: plans::Model, users_with_dates: UsersWithDates) -> impl IntoView {
     let plan_title = plan.name.to_string();
-
     view! {
         <Page title=plan_title.clone()>
             <div>
                 <h1>{plan_title}</h1>
             </div>
 
-            <Calendar plan=plan.clone() user=None calendar_month=CalendarMonth::current_month() />
-            <Users users=users current_user=None />
+            <Calendar
+                users_with_dates=users_with_dates.clone()
+                current_user=None
+                calendar_month=CalendarMonth::current_month()
+            />
+            <Users users_with_dates=users_with_dates current_user=None />
         </Page>
     }
 }
@@ -138,3 +146,10 @@ async fn redirect_plan_handler(Path(page_slug): Path<String>) -> impl IntoRespon
     Redirect::permanent(uri)
 }
 // endregion: --- Plan Redirect
+
+// region:	  --- Utilities
+
+pub type UsersWithDates = Vec<(users::Model, Vec<dates::Model>)>;
+
+// impl UsersWithDates {}
+// endregion: --- Utilities

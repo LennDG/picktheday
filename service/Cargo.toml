@@ -25,7 +25,7 @@ tower-http = { version = "0.5", features = [
     "fs",
     "compression-zstd",
 ] } # HTTP utilities for Tower
-once_cell = "1.20.1"
+once_cell = { workspace = true }
 
 # --- Error Handling ---
 thiserror = "1" # Simplified error handling

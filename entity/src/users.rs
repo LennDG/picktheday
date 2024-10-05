@@ -68,22 +68,63 @@ impl IntoActiveModel<ActiveModel> for NewUser {
 
 // region:	  --- Helper functions
 pub mod helpers {
+    use std::sync::Arc;
+
     use super::{Column, Entity, Model};
     use crate::{
+        dates,
         db::ModelManager,
         error::{Error, Result},
+        plans,
         types::PublicId,
     };
-    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+    use dashmap::DashMap; // For concurrent in-memory cache
+    use once_cell::sync::Lazy;
+    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter};
+    use time::Date;
 
-    pub async fn user_by_public_id(id: PublicId, mm: ModelManager) -> Result<Model> {
+    // Define the cache using `Lazy` and `DashMap`
+    static USER_ID_CACHE: Lazy<Arc<DashMap<PublicId, i32>>> =
+        Lazy::new(|| Arc::new(DashMap::new()));
+
+    pub async fn user_id_by_public_id(public_id: PublicId, mm: ModelManager) -> Result<i32> {
+        // First, check if the user is already in the cache
+        if let Some(cached_user_id) = USER_ID_CACHE.get(&public_id) {
+            return Ok(cached_user_id.clone());
+        }
+
+        // If not in the cache, get it from DB and put it into the cache
+        let id = user_by_public_id(public_id.clone(), mm.clone()).await?.id;
+        USER_ID_CACHE.insert(public_id, id);
+
+        Ok(id)
+    }
+
+    pub async fn user_by_public_id(public_id: PublicId, mm: ModelManager) -> Result<Model> {
         let user = Entity::find()
-            .filter(Column::PublicId.eq(id.clone()))
+            .filter(Column::PublicId.eq(public_id.clone()))
             .one(mm.db())
             .await?
-            .ok_or(Error::EntityNotFound(id.to_string()))?;
+            .ok_or(Error::EntityNotFound(public_id.to_string()))?;
 
         Ok(user)
+    }
+
+    pub async fn get_users_with_date_for_plan_public_id(
+        plan_public_id: PublicId,
+        mm: ModelManager,
+    ) -> Result<Vec<(Model, Vec<dates::Model>)>> {
+        let id = plans::helpers::plan_by_public_id(plan_public_id, mm.clone())
+            .await?
+            .id;
+
+        let users_with_dates = Entity::find()
+            .filter(Column::PlanId.eq(id))
+            .find_with_related(dates::Entity)
+            .all(mm.clone().db())
+            .await?;
+
+        Ok(users_with_dates)
     }
 }
 // endregion: --- Helper functions

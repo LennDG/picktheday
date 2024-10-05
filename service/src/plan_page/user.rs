@@ -5,7 +5,7 @@ use crate::{
         calendar::{Calendar, CalendarMonth},
         htmx_ids,
     },
-    util_components::HtmxHiddenInput,
+    util_components::{HtmxHiddenInput, HtmxSwapOob},
 };
 use axum::{
     extract::{Path, State},
@@ -16,9 +16,7 @@ use axum::{
 use entity::{
     db::ModelManager,
     plans::{self},
-    sea_orm::{
-        ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, ModelTrait, QueryFilter,
-    },
+    sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter},
     types::{PublicId, UserName},
     users::{self, NewUser},
 };
@@ -26,6 +24,8 @@ use http::StatusCode;
 use leptos::prelude::*;
 use serde::Deserialize;
 use tracing::debug;
+
+use super::UsersWithDates;
 
 pub fn routes(mm: ModelManager) -> Router<entity::db::ModelManager> {
     Router::new().nest(
@@ -44,10 +44,8 @@ struct UserPost {
 
 #[derive(Debug)]
 struct UpdateUserResponse {
-    plan: plans::Model,
-    users: Vec<users::Model>,
-    current_user: users::Model,
     current_user_public_id: PublicId,
+    users_with_dates: UsersWithDates,
 }
 
 impl IntoResponse for UpdateUserResponse {
@@ -56,10 +54,8 @@ impl IntoResponse for UpdateUserResponse {
         let view = Html(
             view! {
                 <UsersUpdate
-                    plan=self.plan
-                    users=self.users
+                    users_with_dates=self.users_with_dates
                     current_user_public_id=self.current_user_public_id
-                    current_user=self.current_user
                 />
             }
             .to_html(),
@@ -81,7 +77,7 @@ async fn create_user_handler(
 
     // -- Get the plan
     let plan = plans::Entity::find()
-        .filter(plans::Column::PublicId.eq(plan_public_id))
+        .filter(plans::Column::PublicId.eq(plan_public_id.clone()))
         .one(mm.db())
         .await?;
 
@@ -90,16 +86,16 @@ async fn create_user_handler(
         let new_user = NewUser::new(user_post.username, plan_model.id);
 
         // TODO: Give clear error to user when username already exists
-        let new_user_model = new_user.into_active_model().insert(mm.clone().db()).await?;
+        // -- Insert new user
+        let new_user_model = new_user.into_active_model().insert(mm.db()).await?;
 
-        //-- Get all users
-        let users = plan_model.get_users(mm).await?;
+        //-- Get all users with their dates to use for result
+        let users_with_dates =
+            users::helpers::get_users_with_date_for_plan_public_id(plan_public_id, mm).await?;
 
         Ok(UpdateUserResponse {
-            plan: plan_model,
-            users,
+            users_with_dates,
             current_user_public_id: new_user_model.public_id.clone(),
-            current_user: new_user_model,
         }
         .into_response())
     } else {
@@ -110,27 +106,39 @@ async fn create_user_handler(
 
 #[component]
 fn UsersUpdate(
-    plan: plans::Model,
-    users: Vec<users::Model>,
+    users_with_dates: UsersWithDates,
     current_user_public_id: PublicId,
-    current_user: users::Model,
 ) -> impl IntoView {
     let calendar_month = CalendarMonth::current_month();
+    let calender_id = htmx_ids::CALENDAR_ID.clone();
 
     view! {
-        <Users users=users current_user=Some(current_user_public_id) />
-        <Calendar plan=plan calendar_month=calendar_month user=Some(current_user) />
+        <Users
+            users_with_dates=users_with_dates.clone()
+            current_user=Some(current_user_public_id.clone())
+        />
+        <HtmxSwapOob id=calender_id>
+            <Calendar
+                users_with_dates=users_with_dates
+                calendar_month=calendar_month
+                current_user=Some(current_user_public_id)
+            />
+        </HtmxSwapOob>
     }
 }
 
 #[component]
-pub fn Users(users: Vec<users::Model>, current_user: Option<PublicId>) -> impl IntoView {
+pub fn Users(users_with_dates: UsersWithDates, current_user: Option<PublicId>) -> impl IntoView {
     let user_id = match current_user {
         Some(public_id) => public_id.to_string(),
         None => "".to_string(),
     };
 
     let users_id = HtmxId::new("users");
+    let users = users_with_dates
+        .into_iter()
+        .map(|user_dates| user_dates.0)
+        .collect();
 
     view! {
         <div id="users">

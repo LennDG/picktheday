@@ -2,6 +2,8 @@
 
 use sea_orm::{entity::prelude::*, IntoActiveModel, Set};
 
+pub use Entity as DateModel;
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "dates")]
 pub struct Model {
@@ -56,22 +58,34 @@ impl IntoActiveModel<ActiveModel> for NewDate {
 
 // region:	  --- Helpers
 pub mod helpers {
-    use super::{Column, Entity};
+    use super::{Column, Entity, NewDate};
     use crate::{db::ModelManager, error::Result, types::PublicId, users};
 
-    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter};
+    use time::Date;
 
-    pub async fn delete_date_for_user(
+    pub async fn user_add_date(public_id: PublicId, date: Date, mm: ModelManager) -> Result<()> {
+        let user_id = users::helpers::user_id_by_public_id(public_id, mm.clone()).await?;
+
+        let _ = NewDate::new(date, user_id)
+            .into_active_model()
+            .insert(mm.db())
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn user_delete_date(
         user_public_id: PublicId,
         date: time::Date,
         mm: ModelManager,
     ) -> Result<()> {
         // TODO: Make this a single query instead of 2
 
-        let user = users::helpers::user_by_public_id(user_public_id, mm.clone()).await?;
+        let user_id = users::helpers::user_id_by_public_id(user_public_id, mm.clone()).await?;
 
         Entity::delete_many()
-            .filter(Column::UserId.eq(user.id))
+            .filter(Column::UserId.eq(user_id))
             .filter(Column::Date.eq(date))
             .exec(mm.db())
             .await?;

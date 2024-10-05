@@ -8,8 +8,6 @@ use axum::{
 use entity::{
     dates::{self, NewDate},
     db::ModelManager,
-    plans,
-    sea_orm::{ActiveModelTrait, IntoActiveModel},
     types::PublicId,
     users,
 };
@@ -26,6 +24,8 @@ use crate::{
     plan_page::htmx_ids,
     util_components::HtmxHiddenInput,
 };
+
+use super::UsersWithDates;
 
 pub fn routes(mm: ModelManager) -> Router<entity::db::ModelManager> {
     Router::new().nest(
@@ -61,17 +61,18 @@ async fn get_calendar_handler(
         year: calendar_get.year,
     };
 
-    // -- Get the plan
-    let plan = plans::helpers::plan_by_public_id(plan_public_id, mm.clone()).await?;
+    // -- Get the users and dates
+    let users_with_dates =
+        users::helpers::get_users_with_date_for_plan_public_id(plan_public_id, mm).await?;
 
-    // -- Get the user if there is one
-    let user = if let Some(user_id) = calendar_get.user_public_id {
-        Some(users::helpers::user_by_public_id(user_id, mm).await?)
-    } else {
-        None
-    };
-
-    let view = view! { <Calendar plan=plan user=user calendar_month=calendar_month /> }.to_html();
+    let view = view! {
+        <Calendar
+            users_with_dates=users_with_dates
+            current_user=calendar_get.user_public_id
+            calendar_month=calendar_month
+        />
+    }
+    .to_html();
     Ok(Html(view))
 }
 
@@ -96,15 +97,7 @@ async fn add_date_handler(
         "{:<12} - add_date - {plan_public_id} - {}",
         "HANDLER", date_post.date
     );
-
-    let user_id = users::helpers::user_by_public_id(date_post.user_public_id, mm.clone())
-        .await?
-        .id;
-
-    let _ = NewDate::new(date_post.date, user_id)
-        .into_active_model()
-        .insert(mm.db())
-        .await?;
+    dates::helpers::user_add_date(date_post.user_public_id, date_post.date, mm).await?;
 
     Ok((StatusCode::CREATED).into_response())
 }
@@ -119,7 +112,7 @@ async fn delete_date_handler(
         "HANDLER", date_delete.date
     );
 
-    dates::helpers::delete_date_for_user(date_delete.user_public_id, date_delete.date, mm).await?;
+    dates::helpers::user_delete_date(date_delete.user_public_id, date_delete.date, mm).await?;
 
     Ok((StatusCode::OK).into_response())
 }
@@ -127,35 +120,31 @@ async fn delete_date_handler(
 // endregion: --- Date handlers
 
 static CALENDAR_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar"));
-static CALENDAR_CONTAINER: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar_container"));
 #[component]
 pub fn Calendar(
-    plan: plans::Model,
-    user: Option<users::Model>,
+    users_with_dates: UsersWithDates,
+    current_user: Option<PublicId>,
     calendar_month: CalendarMonth,
 ) -> impl IntoView {
     let calender_id = CALENDAR_ID.clone().to_string();
-    let calendar_container_id = CALENDAR_CONTAINER.clone().to_string();
 
     view! {
-        // Any time a Calendar component is received on the browser, it should be swapped in here
-        <div id=calendar_container_id hx-swap-oob="true">
-            <div id=calender_id.clone() class="container mx-auto my-8">
-                <SwitchMonthButton
-                    next_or_previous=SwitchMonth::Previous
+        <div id=calender_id.clone() class="container mx-auto my-8">
+            <SwitchMonthButton
+                next_or_previous=SwitchMonth::Previous
+                calendar_month=calendar_month
+            />
+            {calendar_month.month.to_string()}
+            {calendar_month.year}
+            <SwitchMonthButton next_or_previous=SwitchMonth::Next calendar_month=calendar_month />
+            <div class="grid grid-cols-7 gap-1 items-center justify-center">
+                <Weekdays />
+                <div class="col-span-7 border-b-2 border-gray-400"></div>
+                <Dates
+                    users_with_dates=users_with_dates
+                    current_user=current_user
                     calendar_month=calendar_month
                 />
-                {calendar_month.month.to_string()}
-                {calendar_month.year}
-                <SwitchMonthButton
-                    next_or_previous=SwitchMonth::Next
-                    calendar_month=calendar_month
-                />
-                <div class="grid grid-cols-7 gap-1 items-center justify-center">
-                    <Weekdays />
-                    <div class="col-span-7 border-b-2 border-gray-400"></div>
-                    <Dates plan=plan user=user calendar_month=calendar_month />
-                </div>
             </div>
         </div>
     }
@@ -164,17 +153,14 @@ pub fn Calendar(
 /// A list of dates that are padded to fit a 7 day calendar
 #[component]
 fn Dates(
-    /// The plan is used to collect other user's dates
-    plan: plans::Model,
     /// The user currently editing the plan
-    user: Option<users::Model>,
+    current_user: Option<PublicId>,
+    /// A list of all users with their corresponding dates
+    users_with_dates: UsersWithDates,
     /// Calendar month to be displayed
     calendar_month: CalendarMonth,
 ) -> impl IntoView {
-    // TODO: implement the date handler and do client side stuff to immediately show clicked status
-    // and disable submitting until response came back
-    // --> Use Alpine JS here?
-    if user.is_some() {
+    if current_user.is_some() {
         Either::Left(
             calender_month_dates(calendar_month)
                 .into_iter()

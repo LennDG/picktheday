@@ -28,6 +28,8 @@ sea-orm = { version = "1.0.1", features = [
 tokio = { version = "1", features = ["full"] }
 
 dotenvy = { workspace = true }
+dashmap = "6.1.0"
+once_cell = { workspace = true }
 
 [dev-dependencies]
 anyhow = "1"
