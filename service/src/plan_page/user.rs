@@ -75,32 +75,23 @@ async fn create_user_handler(
         "HANDLER", user_post.username
     );
 
-    // -- Get the plan
-    let plan = plans::Entity::find()
-        .filter(plans::Column::PublicId.eq(plan_public_id.clone()))
-        .one(mm.db())
-        .await?;
+    // -- Create new user
+    let new_user = users::helpers::create_user_for_plan(
+        plan_public_id.clone(),
+        user_post.username,
+        mm.clone(),
+    )
+    .await?;
 
-    // -- Create user if the plan exists
-    if let Some(plan_model) = plan {
-        let new_user = NewUser::new(user_post.username, plan_model.id);
+    //-- Get all users with their dates to use for result
+    let users_with_dates =
+        users::helpers::get_users_with_date_for_plan_public_id(plan_public_id, mm).await?;
 
-        // TODO: Give clear error to user when username already exists
-        // -- Insert new user
-        let new_user_model = new_user.into_active_model().insert(mm.db()).await?;
-
-        //-- Get all users with their dates to use for result
-        let users_with_dates =
-            users::helpers::get_users_with_date_for_plan_public_id(plan_public_id, mm).await?;
-
-        Ok(UpdateUserResponse {
-            users_with_dates,
-            current_user_public_id: new_user_model.public_id.clone(),
-        }
-        .into_response())
-    } else {
-        Ok((StatusCode::NOT_FOUND).into_response())
+    Ok(UpdateUserResponse {
+        users_with_dates,
+        current_user_public_id: new_user.public_id,
     }
+    .into_response())
 }
 // endregion: --- User handlers
 

@@ -35,6 +35,8 @@ impl IntoResponse for Error {
     fn into_response(self) -> Response {
         debug!("{:<12} - model::Error {self:?}", "INTO_RES");
 
+        // TODO! Create a mapping from entity not found to 404 etc.
+
         // Create a placeholder Axum reponse.
         let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
 

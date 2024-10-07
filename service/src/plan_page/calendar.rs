@@ -6,7 +6,7 @@ use axum::{
     Form, Router,
 };
 use entity::{
-    dates::{self, NewDate},
+    dates::{self},
     db::ModelManager,
     types::PublicId,
     users,
@@ -78,6 +78,37 @@ async fn get_calendar_handler(
 
 // endregion: --- Calendar handler
 
+static CALENDAR_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar"));
+#[component]
+pub fn Calendar(
+    users_with_dates: UsersWithDates,
+    current_user: Option<PublicId>,
+    calendar_month: CalendarMonth,
+) -> impl IntoView {
+    let calender_id = CALENDAR_ID.clone().to_string();
+
+    view! {
+        <div id=calender_id.clone() class="container mx-auto my-8">
+            <SwitchMonthButton
+                next_or_previous=SwitchMonth::Previous
+                calendar_month=calendar_month
+            />
+            {calendar_month.month.to_string()}
+            {calendar_month.year}
+            <SwitchMonthButton next_or_previous=SwitchMonth::Next calendar_month=calendar_month />
+            <div class="grid grid-cols-7 gap-1 items-center justify-center">
+                <Weekdays />
+                <div class="col-span-7 border-b-2 border-gray-400"></div>
+                <Dates
+                    users_with_dates=users_with_dates
+                    current_user=current_user
+                    calendar_month=calendar_month
+                />
+            </div>
+        </div>
+    }
+}
+
 // region:	  --- Date handlers
 ::time::serde::format_description!(date_format, Date, "[year]-[month]-[day]");
 
@@ -118,37 +149,6 @@ async fn delete_date_handler(
 }
 
 // endregion: --- Date handlers
-
-static CALENDAR_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar"));
-#[component]
-pub fn Calendar(
-    users_with_dates: UsersWithDates,
-    current_user: Option<PublicId>,
-    calendar_month: CalendarMonth,
-) -> impl IntoView {
-    let calender_id = CALENDAR_ID.clone().to_string();
-
-    view! {
-        <div id=calender_id.clone() class="container mx-auto my-8">
-            <SwitchMonthButton
-                next_or_previous=SwitchMonth::Previous
-                calendar_month=calendar_month
-            />
-            {calendar_month.month.to_string()}
-            {calendar_month.year}
-            <SwitchMonthButton next_or_previous=SwitchMonth::Next calendar_month=calendar_month />
-            <div class="grid grid-cols-7 gap-1 items-center justify-center">
-                <Weekdays />
-                <div class="col-span-7 border-b-2 border-gray-400"></div>
-                <Dates
-                    users_with_dates=users_with_dates
-                    current_user=current_user
-                    calendar_month=calendar_month
-                />
-            </div>
-        </div>
-    }
-}
 
 /// A list of dates that are padded to fit a 7 day calendar
 #[component]
@@ -228,6 +228,11 @@ fn InteractiveDate(date: Date) -> impl IntoView {
     }
 }
 
+enum SwitchMonth {
+    Previous,
+    Next,
+}
+
 #[component]
 fn SwitchMonthButton(
     next_or_previous: SwitchMonth,
@@ -280,11 +285,6 @@ fn Weekdays() -> impl IntoView {
             view! { <div class="text-gray-400 font-bold">{day}</div> }
         })
         .collect_view()
-}
-
-enum SwitchMonth {
-    Previous,
-    Next,
 }
 
 // region:	  --- Utils

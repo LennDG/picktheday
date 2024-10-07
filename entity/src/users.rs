@@ -68,34 +68,43 @@ impl IntoActiveModel<ActiveModel> for NewUser {
 
 // region:	  --- Helper functions
 pub mod helpers {
-    use std::sync::Arc;
 
     use super::{Column, Entity, Model};
     use crate::{
         dates,
         db::ModelManager,
         error::{Error, Result},
-        plans,
-        types::PublicId,
+        plans::{self, helpers::plan_id_by_public_id},
+        types::{PublicId, UserName},
+        users, ID_MAP_CACHE,
     };
-    use dashmap::DashMap; // For concurrent in-memory cache
-    use once_cell::sync::Lazy;
-    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter};
-    use time::Date;
+    use sea_orm::{prelude::*, IntoActiveModel};
 
-    // Define the cache using `Lazy` and `DashMap`
-    static USER_ID_CACHE: Lazy<Arc<DashMap<PublicId, i32>>> =
-        Lazy::new(|| Arc::new(DashMap::new()));
+    pub async fn create_user_for_plan(
+        plan_public_id: PublicId,
+        username: UserName,
+        mm: ModelManager,
+    ) -> Result<Model> {
+        // -- Get the plan id
+        let plan_id = plan_id_by_public_id(plan_public_id, mm.clone()).await?;
+
+        // TODO: Give clear error to user when username already exists
+        // -- Insert new user
+        let new_user = users::NewUser::new(username, plan_id);
+        let new_user_model = new_user.into_active_model().insert(mm.db()).await?;
+
+        Ok(new_user_model)
+    }
 
     pub async fn user_id_by_public_id(public_id: PublicId, mm: ModelManager) -> Result<i32> {
         // First, check if the user is already in the cache
-        if let Some(cached_user_id) = USER_ID_CACHE.get(&public_id) {
+        if let Some(cached_user_id) = ID_MAP_CACHE.get(&public_id) {
             return Ok(cached_user_id.clone());
         }
 
         // If not in the cache, get it from DB and put it into the cache
         let id = user_by_public_id(public_id.clone(), mm.clone()).await?.id;
-        USER_ID_CACHE.insert(public_id, id);
+        ID_MAP_CACHE.insert(public_id, id);
 
         Ok(id)
     }

@@ -69,8 +69,22 @@ pub mod helpers {
         db::ModelManager,
         error::{Error, Result},
         types::PublicId,
+        ID_MAP_CACHE,
     };
     use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+
+    pub async fn plan_id_by_public_id(public_id: PublicId, mm: ModelManager) -> Result<i32> {
+        // First, check if the user is already in the cache
+        if let Some(cached_plan_id) = ID_MAP_CACHE.get(&public_id) {
+            return Ok(cached_plan_id.clone());
+        }
+
+        // If not in the cache, get it from DB and put it into the cache
+        let id = plan_by_public_id(public_id.clone(), mm.clone()).await?.id;
+        ID_MAP_CACHE.insert(public_id, id);
+
+        Ok(id)
+    }
 
     pub async fn plan_by_public_id(id: PublicId, mm: ModelManager) -> Result<Model> {
         let plan = Entity::find()
