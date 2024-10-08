@@ -1,4 +1,5 @@
 use picktheday::{app, config::web_config};
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() {
@@ -11,6 +12,7 @@ async fn main() {
     tracing_subscriber::fmt()
         .without_time()
         .with_target(false)
+        .with_max_level(tracing::Level::DEBUG)
         .init();
 
     // Get config

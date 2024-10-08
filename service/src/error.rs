@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use thiserror::Error;
-use tracing::debug;
+use tracing::error;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -33,7 +33,7 @@ pub enum Error {
 // region:    --- Axum IntoResponse
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        debug!("{:<12} - model::Error {self:?}", "INTO_RES");
+        error!("{:<12} - {self:?}", "INTO_RES");
 
         // TODO! Create a mapping from entity not found to 404 etc.
 

@@ -38,8 +38,10 @@ derive_more = { workspace = true }               # Derive common traits with les
 dotenvy = { workspace = true }
 
 # --- Tracing and Logging ---
-tracing = { version = "0.1" }              # tracing for structured logging
-tracing-subscriber = { version = "0.3.0" } # tracing subscriber for filtering/logging
+tracing = { version = "0.1" } # tracing for structured logging
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+] } # tracing subscriber for filtering/logging
 
 # --- Panic Hook ---
 console_error_panic_hook = "0.1" # Hook for better error reporting in WebAssembly

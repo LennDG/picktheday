@@ -8,6 +8,7 @@ use axum::{
 use entity::{
     dates::{self},
     db::ModelManager,
+    types::deserialize_public_id_option,
     types::PublicId,
     users,
 };
@@ -16,16 +17,16 @@ use leptos::{either::Either, prelude::*};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize};
 use time::{Date, Month, OffsetDateTime, Weekday};
-use tracing::info;
+use tracing::debug;
 
 use crate::{
     error::Result,
     htmx_helpers::{HtmxId, HtmxInclude, HtmxInput, HtmxTarget},
-    plan_page::htmx_ids,
+    plan_page::{filter_users_with_dates, htmx_ids},
     util_components::HtmxHiddenInput,
 };
 
-use super::UsersWithDates;
+use super::UserWithDates;
 
 pub fn routes(mm: ModelManager) -> Router<entity::db::ModelManager> {
     Router::new().nest(
@@ -44,6 +45,7 @@ struct CalendarGet {
     #[serde(deserialize_with = "deserialize_month")]
     month: Month,
     year: i32,
+    #[serde(deserialize_with = "deserialize_public_id_option")]
     user_public_id: Option<PublicId>,
 }
 
@@ -51,9 +53,9 @@ struct CalendarGet {
 async fn get_calendar_handler(
     State(mm): State<ModelManager>,
     Path(plan_public_id): Path<PublicId>,
-    Form(calendar_get): Form<CalendarGet>,
+    Query(calendar_get): Query<CalendarGet>,
 ) -> Result<impl IntoResponse> {
-    info!("{:<12} - calendar - {plan_public_id}", "HANDLER");
+    debug!("{:<12} - calendar - {plan_public_id}", "HANDLER");
 
     // -- Calendar Month
     let calendar_month = CalendarMonth {
@@ -65,10 +67,17 @@ async fn get_calendar_handler(
     let users_with_dates =
         users::helpers::get_users_with_date_for_plan_public_id(plan_public_id, mm).await?;
 
+    // -- Get the dates for the current user
+    let current_user_with_dates = if let Some(user_public_id) = calendar_get.user_public_id {
+        filter_users_with_dates(&users_with_dates, user_public_id)
+    } else {
+        None
+    };
+
     let view = view! {
         <Calendar
             users_with_dates=users_with_dates
-            current_user=calendar_get.user_public_id
+            current_user_with_dates=current_user_with_dates
             calendar_month=calendar_month
         />
     }
@@ -81,8 +90,8 @@ async fn get_calendar_handler(
 static CALENDAR_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("calendar"));
 #[component]
 pub fn Calendar(
-    users_with_dates: UsersWithDates,
-    current_user: Option<PublicId>,
+    users_with_dates: Vec<UserWithDates>,
+    current_user_with_dates: Option<UserWithDates>,
     calendar_month: CalendarMonth,
 ) -> impl IntoView {
     let calender_id = CALENDAR_ID.clone().to_string();
@@ -95,13 +104,13 @@ pub fn Calendar(
             />
             {calendar_month.month.to_string()}
             {calendar_month.year}
-            <SwitchMonthButton next_or_previous=SwitchMonth::Next calendar_month=calendar_month />
+            <SwitchMonthButton next_or_previous=SwitchMonth::Next calendar_month=calendar_month/>
             <div class="grid grid-cols-7 gap-1 items-center justify-center">
-                <Weekdays />
+                <Weekdays/>
                 <div class="col-span-7 border-b-2 border-gray-400"></div>
                 <Dates
                     users_with_dates=users_with_dates
-                    current_user=current_user
+                    current_user_with_dates=current_user_with_dates
                     calendar_month=calendar_month
                 />
             </div>
@@ -124,7 +133,7 @@ async fn add_date_handler(
     Path(plan_public_id): Path<PublicId>,
     Form(date_post): Form<ToggleDate>,
 ) -> Result<impl IntoResponse> {
-    info!(
+    debug!(
         "{:<12} - add_date - {plan_public_id} - {}",
         "HANDLER", date_post.date
     );
@@ -138,7 +147,7 @@ async fn delete_date_handler(
     Path(plan_public_id): Path<PublicId>,
     Query(date_delete): Query<ToggleDate>,
 ) -> Result<impl IntoResponse> {
-    info!(
+    debug!(
         "{:<12} - delete_date - {plan_public_id} - {}",
         "HANDLER", date_delete.date
     );
@@ -154,27 +163,31 @@ async fn delete_date_handler(
 #[component]
 fn Dates(
     /// The user currently editing the plan
-    current_user: Option<PublicId>,
+    current_user_with_dates: Option<UserWithDates>,
     /// A list of all users with their corresponding dates
-    users_with_dates: UsersWithDates,
+    users_with_dates: Vec<UserWithDates>,
     /// Calendar month to be displayed
     calendar_month: CalendarMonth,
 ) -> impl IntoView {
-    if current_user.is_some() {
+    if let Some((user, dates)) = current_user_with_dates {
+        // Get the dates for the user
         Either::Left(
-            calender_month_dates(calendar_month)
+            calendar_month
+                .dates()
                 .into_iter()
                 .map(|date| {
-                    view! { <InteractiveDate date=date /> }
+                    let selected = dates.iter().any(|date_model| date == date_model.date);
+                    view! { <InteractiveDate date=date calendar_month=calendar_month selected=selected/> }
                 })
                 .collect_view(),
         )
     } else {
         Either::Right(
-            calender_month_dates(calendar_month)
+            calendar_month
+                .dates()
                 .into_iter()
                 .map(|date| {
-                    view! { <NonInteractiveDate date=date /> }
+                    view! { <NonInteractiveDate date=date calendar_month=calendar_month/> }
                 })
                 .collect_view(),
         )
@@ -182,31 +195,52 @@ fn Dates(
 }
 
 #[component]
-fn NonInteractiveDate(date: Date) -> impl IntoView {
+fn NonInteractiveDate(date: Date, calendar_month: CalendarMonth) -> impl IntoView {
+    let class = if date.month() == calendar_month.month {
+        "ring-gray-400 hover:ring-1 h-12 text-white w-full"
+    } else {
+        "ring-gray-400 hover:ring-1 h-12 text-gray-500 w-full"
+    };
+
     view! {
-        <button type="button" class="ring-gray-400 hover:ring-1 h-12 text-white w-full">
+        <button type="button" class=class>
             {date.day()}
         </button>
     }
 }
 
 #[component]
-fn InteractiveDate(date: Date) -> impl IntoView {
+fn InteractiveDate(date: Date, selected: bool, calendar_month: CalendarMonth) -> impl IntoView {
     let user_public_id = htmx_ids::USER_PUBLIC_ID.clone();
     let date_button_id = HtmxInput::new(HtmxId::new(&format!("date-{}", date)), "date");
 
     let include_targets =
         HtmxInclude::from(vec![user_public_id, date_button_id.clone()]).to_string();
 
+    // TODO: Think of how to improve class composing in a less ad-hoc way
+    let mut class = "ring-gray-400 hover:ring-1 h-12 w-full".to_string();
+    if date.month() == calendar_month.month {
+        class += " text-white"
+    } else {
+        class += " text-gray-500"
+    }
+    let selected_class = class.clone() + " bg-slate-500";
+
+    let xdata = if selected {
+        "{isDelete : true}"
+    } else {
+        "{isDelete : false}"
+    };
+
     view! {
-        <div x-data="{isDelete : false}">
-            <HtmxHiddenInput input=date_button_id value=date />
+        <div x-data=xdata>
+            <HtmxHiddenInput input=date_button_id value=date/>
             <button
                 x-show="!isDelete"
                 hx-include=include_targets.clone()
                 hx-swap="none"
                 type="button"
-                class="ring-gray-400 hover:ring-1 h-12 text-white w-full"
+                class=class
                 x-on:click="isDelete = !isDelete"
                 hx-post="calendar/date"
             >
@@ -217,13 +251,12 @@ fn InteractiveDate(date: Date) -> impl IntoView {
                 hx-include=include_targets
                 hx-swap="none"
                 type="button"
-                class="ring-gray-400 hover:ring-1 h-12 text-white w-full"
+                class=selected_class
                 x-on:click="isDelete = !isDelete"
                 hx-delete="calendar/date"
             >
                 {date.day()}
             </button>
-
         </div>
     }
 }
@@ -263,8 +296,8 @@ fn SwitchMonthButton(
     .to_string();
 
     view! {
-        <HtmxHiddenInput input=switch_month_id value=switch_calendar_month.month />
-        <HtmxHiddenInput input=switch_year_id value=switch_calendar_month.year />
+        <HtmxHiddenInput input=switch_month_id value=switch_calendar_month.month/>
+        <HtmxHiddenInput input=switch_year_id value=switch_calendar_month.year/>
         <button
             hx-get="calendar"
             hx-swap="outerHTML"
@@ -303,6 +336,46 @@ impl CalendarMonth {
             year: now.year(),
         }
     }
+
+    // This adds the dates of the previous and next months until
+    // the first day is a monday and the last day a sunday
+    // for fitting on the calendar
+    fn dates(&self) -> Vec<Date> {
+        let dates: Vec<Date> = (1..32)
+            .map(|day| Date::from_calendar_date(self.year, self.month, day))
+            .take_while(|date_result| date_result.is_ok())
+            .filter_map(|date| date.ok()) // Basically just unwraps by throwing away errors, but errors have already been removed by the take_while
+            .collect();
+
+        let mut padded = vec![];
+
+        // Pad dates backwards until the first day is Monday
+        let mut first = *dates.first().unwrap();
+        while first.weekday() != Weekday::Monday {
+            if let Some(previous_day) = first.previous_day() {
+                first = previous_day;
+                padded.insert(0, first);
+            } else {
+                break;
+            }
+        }
+
+        // Append the existing dates to the left padding
+        padded.extend_from_slice(&dates);
+
+        // Pad the dates forward until the last day is Sunday
+        let mut last = *dates.last().unwrap();
+        while last.weekday() != Weekday::Sunday {
+            if let Some(next_day) = last.next_day() {
+                last = next_day;
+                padded.push(last);
+            } else {
+                break;
+            }
+        }
+
+        padded
+    }
 }
 
 fn previous_month(calendar_month: CalendarMonth) -> CalendarMonth {
@@ -331,46 +404,6 @@ fn next_month(calendar_month: CalendarMonth) -> CalendarMonth {
             year: calendar_month.year,
         }
     }
-}
-
-// This adds the dates of the previous and next months until
-// the first day is a monday and the last day a sunday
-// for fitting on the calendar
-fn calender_month_dates(calendar_month: CalendarMonth) -> Vec<Date> {
-    let dates: Vec<Date> = (1..32)
-        .map(|day| Date::from_calendar_date(calendar_month.year, calendar_month.month, day))
-        .take_while(|date_result| date_result.is_ok())
-        .filter_map(|date| date.ok()) // Basically just unwraps by throwing away errors, but errors have already been removed by the take_while
-        .collect();
-
-    let mut padded = vec![];
-
-    // Pad dates backwards until the first day is Monday
-    let mut first = *dates.first().unwrap();
-    while first.weekday() != Weekday::Monday {
-        if let Some(previous_day) = first.previous_day() {
-            first = previous_day;
-            padded.insert(0, first);
-        } else {
-            break;
-        }
-    }
-
-    // Append the existing dates to the left padding
-    padded.extend_from_slice(&dates);
-
-    // Pad the dates forward until the last day is Sunday
-    let mut last = *dates.last().unwrap();
-    while last.weekday() != Weekday::Sunday {
-        if let Some(next_day) = last.next_day() {
-            last = next_day;
-            padded.push(last);
-        } else {
-            break;
-        }
-    }
-
-    padded
 }
 
 fn deserialize_month<'de, D>(deserializer: D) -> std::result::Result<Month, D::Error>

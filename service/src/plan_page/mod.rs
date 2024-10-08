@@ -1,7 +1,4 @@
-use crate::{
-    app::Page,
-    error::{Error, Result},
-};
+use crate::{app::Page, error::Result};
 use axum::{
     body::Body,
     extract::{Path, State},
@@ -14,7 +11,7 @@ use calendar::{Calendar, CalendarMonth};
 use entity::{
     dates,
     db::ModelManager,
-    plans::{self, NewPlan},
+    plans::{self},
     sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter},
     types::{PlanName, PublicId},
     users,
@@ -22,7 +19,7 @@ use entity::{
 use http::{StatusCode, Uri};
 use leptos::prelude::*;
 use serde::Deserialize;
-use tracing::{debug, info};
+use tracing::debug;
 use user::Users;
 
 mod calendar;
@@ -52,14 +49,6 @@ struct PlanPost {
     plan_name: PlanName,
 }
 
-impl TryFrom<PlanPost> for NewPlan {
-    type Error = Error;
-
-    fn try_from(plan_post: PlanPost) -> Result<Self> {
-        Ok(NewPlan::new(plan_post.plan_name, None))
-    }
-}
-
 #[derive(Debug)]
 struct CreatePlanResponse {
     plan_url: Uri,
@@ -84,10 +73,9 @@ async fn create_plan_handler(
         "HANDLER", plan_post.plan_name
     );
 
-    let new_plan = NewPlan::try_from(plan_post)?;
-    let new_plan_entity = new_plan.into_active_model().insert(mm.db()).await?;
+    let new_plan = plans::helpers::create_plan(plan_post.plan_name, mm).await?;
 
-    let plan_url = format!("/plan/{}/", new_plan_entity.public_id).parse::<Uri>()?;
+    let plan_url = format!("/plan/{}/", new_plan.public_id).parse::<Uri>()?;
 
     // Return an empty body with the HX-Redirect header
     Ok(CreatePlanResponse { plan_url })
@@ -99,7 +87,7 @@ async fn plan_page_handler(
     State(mm): State<ModelManager>,
     Path(plan_public_id): Path<PublicId>,
 ) -> Result<impl IntoResponse> {
-    info!("{:<12} - plan_page_handler - {plan_public_id}", "HANDLER");
+    debug!("{:<12} - plan_page_handler - {plan_public_id}", "HANDLER");
 
     // -- Get the plan
     let plan = plans::helpers::plan_by_public_id(plan_public_id.clone(), mm.clone()).await?;
@@ -108,15 +96,12 @@ async fn plan_page_handler(
     let users_with_dates =
         users::helpers::get_users_with_date_for_plan_public_id(plan_public_id, mm).await;
 
-    warn!("{:<12} - {:?}", "HANDLER", users_with_dates);
-
-    let view =
-        view! { <PlanPage plan=plan users_with_dates=users_with_dates.unwrap() /> }.to_html();
+    let view = view! { <PlanPage plan=plan users_with_dates=users_with_dates.unwrap()/> }.to_html();
     Ok(Html(view))
 }
 
 #[component]
-fn PlanPage(plan: plans::Model, users_with_dates: UsersWithDates) -> impl IntoView {
+fn PlanPage(plan: plans::Model, users_with_dates: Vec<UserWithDates>) -> impl IntoView {
     let plan_title = plan.name.to_string();
     view! {
         <Page title=plan_title.clone()>
@@ -126,10 +111,10 @@ fn PlanPage(plan: plans::Model, users_with_dates: UsersWithDates) -> impl IntoVi
 
             <Calendar
                 users_with_dates=users_with_dates.clone()
-                current_user=None
+                current_user_with_dates=None
                 calendar_month=CalendarMonth::current_month()
             />
-            <Users users_with_dates=users_with_dates current_user=None />
+            <Users users_with_dates=users_with_dates current_user=None/>
         </Page>
     }
 }
@@ -149,7 +134,18 @@ async fn redirect_plan_handler(Path(page_slug): Path<String>) -> impl IntoRespon
 
 // region:	  --- Utilities
 
-pub type UsersWithDates = Vec<(users::Model, Vec<dates::Model>)>;
+pub type UserWithDates = (users::Model, Vec<dates::Model>);
+
+fn filter_users_with_dates(
+    users_with_dates: &Vec<UserWithDates>,
+    user_public_id: PublicId,
+) -> Option<UserWithDates> {
+    // -- Get the dates for the current user
+    users_with_dates
+        .iter()
+        .find(|user_with_dates| user_with_dates.0.public_id == user_public_id)
+        .cloned()
+}
 
 // impl UsersWithDates {}
 // endregion: --- Utilities

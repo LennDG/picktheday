@@ -8,18 +8,18 @@ use entity::db::ModelManager;
 
 use http::StatusCode;
 use leptos::prelude::*;
-use tracing::info;
+use tracing::debug;
 
 pub fn routes(mm: ModelManager) -> Router {
     Router::new().route("/", get(index_page)).with_state(mm)
 }
 
 pub async fn index_page() -> Html<String> {
-    info!("{:<12} - index", "HANDLER");
+    debug!("{:<12} - index", "HANDLER");
 
     let content = view! {
         <Page title="Pick The Day!".to_string()>
-            <HomePage />
+            <HomePage/>
         </Page>
     }
     .to_html();
@@ -30,7 +30,7 @@ pub async fn index_page() -> Html<String> {
 pub async fn not_found_page() -> impl IntoResponse {
     let content = view! {
         <Page title="Pick The Day!".to_string()>
-            <NotFound />
+            <NotFound/>
         </Page>
     }
     .to_html();
@@ -46,14 +46,14 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
             <head>
                 <title>{title}</title>
 
-                <StyleSheetLink />
+                <StyleSheetLink/>
 
                 <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.min.js" defer></script>
-                <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer />
+                <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
                 // <AlpineGlobalState/>
 
-                <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <meta charset="utf-8"/>
 
                 <script>let FF_FOUC_FIX;</script>
             </head>

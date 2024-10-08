@@ -99,7 +99,7 @@ pub mod helpers {
     pub async fn user_id_by_public_id(public_id: PublicId, mm: ModelManager) -> Result<i32> {
         // First, check if the user is already in the cache
         if let Some(cached_user_id) = ID_MAP_CACHE.get(&public_id) {
-            return Ok(cached_user_id.clone());
+            return Ok(cached_user_id.to_owned());
         }
 
         // If not in the cache, get it from DB and put it into the cache
@@ -123,9 +123,7 @@ pub mod helpers {
         plan_public_id: PublicId,
         mm: ModelManager,
     ) -> Result<Vec<(Model, Vec<dates::Model>)>> {
-        let id = plans::helpers::plan_by_public_id(plan_public_id, mm.clone())
-            .await?
-            .id;
+        let id = plans::helpers::plan_id_by_public_id(plan_public_id, mm.clone()).await?;
 
         let users_with_dates = Entity::find()
             .filter(Column::PlanId.eq(id))

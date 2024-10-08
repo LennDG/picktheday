@@ -83,7 +83,7 @@ mod tests {
         let mm = _dev_utils::init_test().await;
         let db = mm.db();
 
-        let new_plan = plans::NewPlan::new(PlanName::new("test_create_plan_ok").unwrap(), None)
+        let new_plan = plans::NewPlan::new(PlanName::new("test_create_plan_ok").unwrap())
             .into_active_model()
             .insert(db)
             .await?;
@@ -101,7 +101,7 @@ mod tests {
         let mm = _dev_utils::init_test().await;
         let db = mm.db();
 
-        let new_plan = plans::NewPlan::new(PlanName::new("test_create_user_ok").unwrap(), None)
+        let new_plan = plans::NewPlan::new(PlanName::new("test_create_user_ok").unwrap())
             .into_active_model()
             .insert(db)
             .await?;
@@ -125,7 +125,7 @@ mod tests {
         let mm = _dev_utils::init_test().await;
         let db = mm.db();
 
-        let new_plan = plans::NewPlan::new(PlanName::new("test_create_date_ok").unwrap(), None)
+        let new_plan = plans::NewPlan::new(PlanName::new("test_create_date_ok").unwrap())
             .into_active_model()
             .insert(db)
             .await?;

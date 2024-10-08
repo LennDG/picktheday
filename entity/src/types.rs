@@ -45,9 +45,27 @@ impl<'de> Deserialize<'de> for PublicId {
         D: Deserializer<'de>,
     {
         let s: String = Deserialize::deserialize(deserializer)?;
-        Self::new(&s).map_err(|err| serde::de::Error::custom(format!("{}", err)))
+        Self::new(&s).map_err(serde::de::Error::custom)
     }
 }
+
+pub fn deserialize_public_id_option<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Option<PublicId>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<String>::deserialize(deserializer)?;
+
+    match opt {
+        Some(s) if s.is_empty() => Ok(None), // Treat empty string as None
+        Some(s) => PublicId::new(&s)
+            .map(Some)
+            .map_err(serde::de::Error::custom), // Call PublicId::new directly
+        None => Ok(None),
+    }
+}
+
 // endregion: --- Public ID
 
 // region:    --- Constrained String
@@ -146,24 +164,3 @@ pub type UserName = ConstrainedString<128>;
 pub type Description = ConstrainedString<1024>;
 
 // endregion: --- Constrained String
-
-// region:	  --- ID
-
-// THIS DOES NOT WORK BECAUSE SeaORM REALLY WANTS A i32 AS ID.
-
-// #[derive(Debug, Clone, PartialEq, Eq, DeriveValueType)]
-// pub struct Id(u64);
-
-// impl TryFromU64 for Id {
-//     fn try_from_u64(n: u64) -> Result<Self, DbErr> {
-//         Ok(Id(n))
-//     }
-// }
-
-// pub type PlanId = Id;
-
-// pub type UserId = Id;
-
-// pub type DateId = Id;
-
-// endregion: --- ID

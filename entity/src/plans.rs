@@ -35,12 +35,11 @@ impl ActiveModelBehavior for ActiveModel {}
 
 pub struct NewPlan {
     name: PlanName,
-    description: Option<Description>,
 }
 
 impl NewPlan {
-    pub fn new(name: PlanName, description: Option<Description>) -> Self {
-        NewPlan { name, description }
+    pub fn new(name: PlanName) -> Self {
+        NewPlan { name }
     }
 }
 
@@ -48,7 +47,7 @@ impl IntoActiveModel<ActiveModel> for NewPlan {
     fn into_active_model(self) -> ActiveModel {
         ActiveModel {
             name: Set(self.name),
-            description: Set(self.description),
+            description: Set(None),
             public_id: Set(PublicId::default()),
             ctime: Set(time::OffsetDateTime::now_utc()),
             ..Default::default()
@@ -64,19 +63,26 @@ impl Model {
 
 // region:	  --- Helper functions
 pub mod helpers {
-    use super::{Column, Entity, Model};
+    use super::{Column, Entity, Model, NewPlan};
     use crate::{
         db::ModelManager,
         error::{Error, Result},
-        types::PublicId,
+        types::{PlanName, PublicId},
         ID_MAP_CACHE,
     };
-    use sea_orm::{ColumnTrait, EntityTrait, QueryFilter};
+    use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter};
+
+    pub async fn create_plan(plan_name: PlanName, mm: ModelManager) -> Result<Model> {
+        let new_plan = NewPlan::new(plan_name);
+        let new_plan_entity = new_plan.into_active_model().insert(mm.db()).await?;
+
+        Ok(new_plan_entity)
+    }
 
     pub async fn plan_id_by_public_id(public_id: PublicId, mm: ModelManager) -> Result<i32> {
         // First, check if the user is already in the cache
         if let Some(cached_plan_id) = ID_MAP_CACHE.get(&public_id) {
-            return Ok(cached_plan_id.clone());
+            return Ok(cached_plan_id.to_owned());
         }
 
         // If not in the cache, get it from DB and put it into the cache
