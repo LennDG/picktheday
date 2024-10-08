@@ -120,7 +120,6 @@ pub fn Calendar(
 
 // region:	  --- Date handlers
 ::time::serde::format_description!(date_format, Date, "[year]-[month]-[day]");
-
 #[derive(Debug, Deserialize)]
 struct ToggleDate {
     #[serde(with = "date_format")]
@@ -176,8 +175,20 @@ fn Dates(
                 .dates()
                 .into_iter()
                 .map(|date| {
+                    let any_selected = users_with_dates
+                        .iter()
+                        .any(|(_, dates)| dates.iter().any(|date_model| date == date_model.date));
                     let selected = dates.iter().any(|date_model| date == date_model.date);
-                    view! { <InteractiveDate date=date calendar_month=calendar_month selected=selected/> }
+
+                    view! {
+                        <SelectedByAnyUser selected=any_selected>
+                            <InteractiveDate
+                                date=date
+                                calendar_month=calendar_month
+                                selected=selected
+                            />
+                        </SelectedByAnyUser>
+                    }
                 })
                 .collect_view(),
         )
@@ -187,10 +198,27 @@ fn Dates(
                 .dates()
                 .into_iter()
                 .map(|date| {
-                    view! { <NonInteractiveDate date=date calendar_month=calendar_month/> }
+                    let any_selected = users_with_dates
+                        .iter()
+                        .any(|(_, dates)| dates.iter().any(|date_model| date == date_model.date));
+
+                    view! {
+                        <SelectedByAnyUser selected=any_selected>
+                            <NonInteractiveDate date=date calendar_month=calendar_month/>
+                        </SelectedByAnyUser>
+                    }
                 })
                 .collect_view(),
         )
+    }
+}
+
+#[component]
+fn SelectedByAnyUser(children: Children, selected: bool) -> impl IntoView {
+    if selected {
+        Either::Left(view! { <div class="bg-slate-700">{children()}</div> })
+    } else {
+        Either::Right(view! { {children()} })
     }
 }
 

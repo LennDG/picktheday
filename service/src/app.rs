@@ -41,7 +41,7 @@ pub async fn not_found_page() -> impl IntoResponse {
 #[component]
 pub fn Page(title: String, children: Children) -> impl IntoView {
     view! {
-        <!DOCTYPE html> 
+        <!DOCTYPE html>
         <html lang="en">
             <head>
                 <title>{title}</title>

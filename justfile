@@ -33,8 +33,8 @@ kill:
     -lsof -i :3001 | awk 'NR==2 {print $2}' | xargs kill
 
 fix:
-    cargo fmt --all
     leptosfmt service
+    cargo fmt --all
     cargo fix --lib --allow-dirty -p picktheday
     cargo fix --lib --allow-dirty -p entity
 

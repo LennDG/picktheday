@@ -49,7 +49,7 @@ struct UpdateUserResponse {
 
 impl IntoResponse for UpdateUserResponse {
     fn into_response(self) -> Response {
-        let status = StatusCode::CREATED;
+        let status = StatusCode::OK;
         let current_user_with_dates =
             filter_users_with_dates(&self.users_with_dates, self.current_user_public_id.clone());
         let view = Html(
@@ -208,7 +208,7 @@ fn UserList(users: Vec<users::Model>) -> impl IntoView {
                 .into_iter()
                 .map(|user| {
                     let username = user.name.to_string();
-                    let input = HtmxInput::new(HtmxId::new(&username), "user_public_id");
+                    let input = HtmxInput::new(HtmxId::new(&format!("user{}",&user.public_id)), "user_public_id");
                     let include = HtmxInclude::from(input.clone()).to_string();
                     let target = HtmxTarget::from(USERS_ID.clone()).to_string();
                     view! {
