@@ -12,7 +12,7 @@ use entity::{
     dates,
     db::ModelManager,
     plans::{self},
-    sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, QueryFilter},
+    sea_orm::EntityTrait,
     types::{PlanName, PublicId},
     users,
 };

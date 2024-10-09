@@ -35,7 +35,7 @@ kill:
 fix:
     leptosfmt service
     cargo fmt --all
-    cargo fix --lib --allow-dirty -p picktheday
+    cargo fix --bin picktheday --allow-dirty
     cargo fix --lib --allow-dirty -p entity
 
 build:

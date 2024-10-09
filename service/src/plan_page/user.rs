@@ -208,7 +208,10 @@ fn UserList(users: Vec<users::Model>) -> impl IntoView {
                 .into_iter()
                 .map(|user| {
                     let username = user.name.to_string();
-                    let input = HtmxInput::new(HtmxId::new(&format!("user{}",&user.public_id)), "user_public_id");
+                    let input = HtmxInput::new(
+                        HtmxId::new(&format!("user{}", &user.public_id)),
+                        "user_public_id",
+                    );
                     let include = HtmxInclude::from(input.clone()).to_string();
                     let target = HtmxTarget::from(USERS_ID.clone()).to_string();
                     view! {
