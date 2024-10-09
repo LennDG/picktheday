@@ -23,6 +23,7 @@ sea-orm = { version = "1.0.1", features = [
     "runtime-tokio-rustls",
     "macros",
     "with-time",
+    "debug-print",
 ] }
 
 tokio = { version = "1", features = ["full"] }

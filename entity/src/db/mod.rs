@@ -47,6 +47,7 @@ pub async fn get_test_connection(url: String) -> Result<DatabaseConnection> {
         .connect_timeout(Duration::from_secs(8))
         .acquire_timeout(Duration::from_secs(8))
         .idle_timeout(Duration::from_secs(8))
+        .sqlx_logging(false)
         .max_lifetime(Duration::from_secs(8));
 
     Ok(Database::connect(opt).await?)
@@ -60,6 +61,7 @@ pub async fn get_connection_pool(url: String) -> Result<DatabaseConnection> {
         .connect_timeout(Duration::from_secs(8))
         .acquire_timeout(Duration::from_secs(8))
         .idle_timeout(Duration::from_secs(8))
+        .sqlx_logging(false)
         .max_lifetime(Duration::from_secs(8));
 
     Ok(Database::connect(opt).await?)

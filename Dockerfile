@@ -20,7 +20,7 @@ COPY --from=builder /work/target/release/picktheday /app/
 COPY --from=builder /work/public /app/public
 COPY --from=builder /work/.env /app/
 
-ENV RUST_LOG="debug"
+ENV RUST_LOG="info"
 EXPOSE 3000
 
 CMD ["/app/picktheday"]
