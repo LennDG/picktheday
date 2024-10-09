@@ -44,7 +44,13 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <style>"html{visibility: hidden;opacity:0;}"</style>
+                <style>
+                    "html {
+                        visibility: hidden;
+                        opacity: 0;
+                    }"
+                </style>
+
                 <title>{title}</title>
 
                 <StyleSheetLink/>
@@ -52,14 +58,24 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
                 <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.min.js" defer></script>
                 <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
 
+
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <meta name="color-scheme" content="dark"/>
                 <meta charset="utf-8"/>
             </head>
 
-            <body class="container relative mx-auto bg-slate-800">
-                <main class="container text-white text-center pt-16">{children()}</main>
+            <body class="bg-slate-800">
+
+                <main class="container relative mx-auto  text-white text-center pt-16">{children()}</main>
+
+                <script>
+                    "document.addEventListener('DOMContentLoaded', function() {
+                        document.documentElement.style.visibility = 'visible';
+                        document.documentElement.style.opacity = '1';
+                    });"
+                </script>
+
             </body>
-            <style>"html{visibility: visible;opacity:1;}"</style>
         </html>
     }
 }
