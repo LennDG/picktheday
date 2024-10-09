@@ -5,15 +5,6 @@ unsafe_code = "forbid"
 resolver = "2"
 members = ["service", "migration", "entity"]
 
-# Defines a size-optimized profile for the WASM bundle in release mode
-[profile.wasm-release]
-inherits = "release"
-opt-level = 'z'
-lto = true
-codegen-units = 1
-panic = "abort"
-
-
 [workspace.dependencies]
 derive_more = { version = "1.0.0-beta", features = ["from", "display"] }
 dotenvy = "0.15"

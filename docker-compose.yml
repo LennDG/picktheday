@@ -12,6 +12,14 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  picktheday:
+    image: picktheday:latest
+    container_name: picktheday
+    environment:
+      DATABASE_URL: postgres://dev:devpassword@postgres:5432/devdb
+    ports:
+      - "4000:3000"
+
   test-postgres:
     image: postgres:17
     container_name: test-postgres

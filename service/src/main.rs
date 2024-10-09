@@ -1,11 +1,17 @@
-use picktheday::{app, config::web_config};
-use tracing_subscriber::EnvFilter;
+use config::web_config;
+use fileserv::file_and_error_handler;
+
+pub mod app;
+pub mod config;
+pub mod error;
+pub mod fileserv;
+pub mod htmx_helpers;
+pub mod plan_page;
+pub mod util_components;
 
 #[tokio::main]
 async fn main() {
     use axum::Router;
-    use picktheday::fileserv::file_and_error_handler;
-    use picktheday::plan_page;
     use tracing::info;
 
     // Setup tracing subscriber
@@ -33,9 +39,7 @@ async fn main() {
         .fallback(file_and_error_handler)
         .layer(tower_http::compression::CompressionLayer::new().zstd(true));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     info!("{:<12} - {:?}\n", "LISTENING", listener.local_addr());
     axum::serve(listener, app.into_make_service())
         .await

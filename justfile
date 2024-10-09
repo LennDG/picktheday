@@ -86,3 +86,6 @@ reset_db: stop_db
 
 connect_db: wait_for_db
     @PGPASSWORD=devpassword psql -h localhost -p 5432 -U dev -d devdb
+
+docker_release:
+    docker build -t picktheday .

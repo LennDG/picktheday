@@ -3,9 +3,6 @@ name = "picktheday"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 # --- Web Framework and Server ---
 axum = { version = "0.7", features = ["macros"] } # Web framework based on Hyper
@@ -74,13 +71,6 @@ anyhow = "1"
 #     "dep:entity",
 # ]
 
-# Defines a size-optimized profile for the WASM bundle in release mode
-[profile.wasm-release]
-inherits = "release"
-opt-level = 'z'
-lto = true
-codegen-units = 1
-panic = "abort"
 
 [package.metadata.leptos]
 # The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
@@ -128,18 +118,3 @@ bin-features = ["ssr"]
 #
 #. Defaults to false.
 bin-default-features = false
-
-# The features to use when compiling the lib target
-#
-#. Can be over-ridden with the command line parameter --lib-features
-lib-features = ["hydrate"]
-
-# If the --no-default-features flag should be used when compiling the lib target
-#
-#. Defaults to false.
-lib-default-features = false
-
-# The profile to use for the lib target when compiling for release
-#
-#. Defaults to "release".
-lib-profile-release = "wasm-release"
