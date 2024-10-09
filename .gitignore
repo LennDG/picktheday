@@ -9,6 +9,9 @@ pkg
 # Dev DB
 db/dev.db
 
+# Compressed blobs
+*.br
+
 # node e2e test tools and outputs
 node_modules/
 test-results/

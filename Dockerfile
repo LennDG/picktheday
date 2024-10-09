@@ -8,7 +8,7 @@ WORKDIR /work
 COPY . .
 
 RUN cargo build --package picktheday --release
-RUN brotli public/main.css
+RUN brotli public/*
 
 
 # Run the app!
