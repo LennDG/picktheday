@@ -58,7 +58,6 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
                 <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.min.js" defer></script>
                 <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
 
-
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
                 <meta name="color-scheme" content="dark"/>
                 <meta charset="utf-8"/>
@@ -66,7 +65,9 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
 
             <body class="bg-slate-800">
 
-                <main class="container relative mx-auto  text-white text-center pt-16">{children()}</main>
+                <main class="container relative mx-auto  text-white text-center pt-16">
+                    {children()}
+                </main>
 
                 <script>
                     "document.addEventListener('DOMContentLoaded', function() {

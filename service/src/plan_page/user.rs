@@ -176,20 +176,20 @@ pub fn Users(
 fn UserInput() -> impl IntoView {
     view! {
         <div>
-        <form
-            hx-post="user"
-            hx-target=HtmxTarget::from(USERS_ID.clone()).to_string()
-            hx-swap="outerHTML"
-            class="container relative z-0 mx-auto flex max-w-80 justify-center space-x-4"
-        >
-            <div>
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    class="border-1 peer block w-full appearance-none rounded-lg border border-gray-600 bg-transparent px-2 py-2.5 text-sm text-white outline-none focus:border-gray-300 "
-                    placeholder="Your name"
-                />
+            <form
+                hx-post="user"
+                hx-target=HtmxTarget::from(USERS_ID.clone()).to_string()
+                hx-swap="outerHTML"
+                class="container relative z-0 mx-auto flex max-w-80 justify-center space-x-4"
+            >
+                <div>
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        class="border-1 peer block w-full appearance-none rounded-lg border border-gray-600 bg-transparent px-2 py-2.5 text-sm text-white outline-none focus:border-gray-300 "
+                        placeholder="Your name"
+                    />
                 </div>
                 <button
                     type="submit"
@@ -198,7 +198,7 @@ fn UserInput() -> impl IntoView {
                     "Create"
                 </button>
 
-        </form>
+            </form>
         </div>
     }
 }
