@@ -89,3 +89,7 @@ connect_db: wait_for_db
 
 docker_release:
     docker build -t picktheday .
+
+docker_start_production:
+    docker compose pull picktheday-prod
+    docker compose up picktheday-prod

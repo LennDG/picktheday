@@ -98,14 +98,19 @@ pub fn Calendar(
 
     view! {
         <div id=calender_id.clone() class="container mx-auto my-8">
-            <SwitchMonthButton
-                next_or_previous=SwitchMonth::Previous
-                calendar_month=calendar_month
-            />
-            {calendar_month.month.to_string()}
-            {calendar_month.year}
-            <SwitchMonthButton next_or_previous=SwitchMonth::Next calendar_month=calendar_month/>
             <div class="grid grid-cols-7 gap-1 items-center justify-center">
+                <SwitchMonthButton
+                    next_or_previous=SwitchMonth::Previous
+                    calendar_month=calendar_month
+                />
+                <div class="text-lg col-span-5 font-bold text-center">
+                    {calendar_month.month.to_string()} " " {calendar_month.year}
+                </div>
+                <SwitchMonthButton
+                    next_or_previous=SwitchMonth::Next
+                    calendar_month=calendar_month
+                />
+                <div class="col-span-7"></div>
                 <Weekdays/>
                 <div class="col-span-7 border-b-2 border-gray-400"></div>
                 <Dates

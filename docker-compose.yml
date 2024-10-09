@@ -20,6 +20,14 @@ services:
     ports:
       - "4000:3000"
 
+  picktheday-prod:
+    image: ghcr.io/lenndg/picktheday/picktheday:latest
+    container_name: picktheday-prod
+    environment:
+      DATABASE_URL: postgres://dev:devpassword@postgres:5432/devdb
+    ports:
+      - "5000:3000"
+
   test-postgres:
     image: postgres:17
     container_name: test-postgres

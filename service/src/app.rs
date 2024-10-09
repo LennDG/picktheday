@@ -50,12 +50,9 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
 
                 <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.min.js" defer></script>
                 <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
-                // <AlpineGlobalState/>
 
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
                 <meta charset="utf-8"/>
-
-                <script>let FF_FOUC_FIX;</script>
             </head>
 
             <body class="container relative mx-auto bg-slate-800">
