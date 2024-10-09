@@ -44,6 +44,7 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
+                <style>"html{visibility: hidden;opacity:0;}"</style>
                 <title>{title}</title>
 
                 <StyleSheetLink/>
@@ -58,6 +59,7 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
             <body class="container relative mx-auto bg-slate-800">
                 <main class="container text-white text-center pt-16">{children()}</main>
             </body>
+            <style>"html{visibility: visible;opacity:1;}"</style>
         </html>
     }
 }
