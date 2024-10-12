@@ -44,16 +44,10 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
-                <style>
-                    "html {
-                        visibility: hidden;
-                        opacity: 0;
-                    }"
-                </style>
-
                 <title>{title}</title>
 
-                <StyleSheetLink/>
+
+                <link href="/main.css" type="text/css" rel="stylesheet"/>
 
                 <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.min.js" defer></script>
                 <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
@@ -68,13 +62,6 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
                 <main class="container relative mx-auto  text-white text-center pt-16">
                     {children()}
                 </main>
-
-                <script>
-                    "document.addEventListener('DOMContentLoaded', function() {
-                        document.documentElement.style.visibility = 'visible';
-                        document.documentElement.style.opacity = '1';
-                    });"
-                </script>
 
             </body>
         </html>
