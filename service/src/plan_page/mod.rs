@@ -132,7 +132,7 @@ async fn redirect_plan_handler(Path(page_slug): Path<String>) -> impl IntoRespon
 }
 // endregion: --- Plan Redirect
 
-// region:	  --- Utilities
+// region:	  --- Utils
 
 pub type UserWithDates = (users::Model, Vec<dates::Model>);
 
@@ -147,5 +147,12 @@ fn filter_users_with_dates(
         .cloned()
 }
 
-// impl UsersWithDates {}
-// endregion: --- Utilities
+pub fn remove_user(
+    mut users_with_dates: Vec<UserWithDates>,
+    user_public_id: PublicId,
+) -> Vec<UserWithDates> {
+    // -- Get the dates for the current user
+    users_with_dates.retain(|(user, _)| user.public_id != user_public_id);
+    users_with_dates
+}
+// endregion: --- Utils

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::{
     debug_handler,
     extract::{Path, Query, State},
@@ -174,44 +176,46 @@ fn Dates(
     calendar_month: CalendarMonth,
 ) -> impl IntoView {
     if let Some((user, dates)) = current_user_with_dates {
+        let other_users = crate::plan_page::remove_user(users_with_dates, user.public_id);
+        let ranked_dates = ranked_dates(&other_users);
         // Get the dates for the user
         Either::Left(
             calendar_month
                 .dates()
                 .into_iter()
                 .map(|date| {
-                    let any_selected = users_with_dates
-                        .iter()
-                        .any(|(_, dates)| dates.iter().any(|date_model| date == date_model.date));
+                    let others_date_rank = if let Some(rank) = ranked_dates.get(&date) {
+                        *rank
+                    } else {
+                        DateRank::None
+                    };
                     let selected = dates.iter().any(|date_model| date == date_model.date);
 
                     view! {
-                        <SelectedByAnyUser selected=any_selected>
-                            <InteractiveDate
-                                date=date
-                                calendar_month=calendar_month
-                                selected=selected
-                            />
-                        </SelectedByAnyUser>
+                        <InteractiveDate
+                            date=date
+                            calendar_month=calendar_month
+                            selected=selected
+                            others_date_rank=others_date_rank
+                        />
                     }
                 })
                 .collect_view(),
         )
     } else {
+        let ranked_dates = ranked_dates(&users_with_dates);
         Either::Right(
             calendar_month
                 .dates()
                 .into_iter()
                 .map(|date| {
-                    let any_selected = users_with_dates
-                        .iter()
-                        .any(|(_, dates)| dates.iter().any(|date_model| date == date_model.date));
+                    let date_rank = if let Some(rank) = ranked_dates.get(&date) {
+                        *rank
+                    } else {
+                        DateRank::None
+                    };
 
-                    view! {
-                        <SelectedByAnyUser selected=any_selected>
-                            <NonInteractiveDate date=date calendar_month=calendar_month/>
-                        </SelectedByAnyUser>
-                    }
+                    view! { <NonInteractiveDate date=date calendar_month=calendar_month date_rank=date_rank/> }
                 })
                 .collect_view(),
         )
@@ -227,23 +231,52 @@ fn SelectedByAnyUser(children: Children, selected: bool) -> impl IntoView {
     }
 }
 
+enum SelectedColors {
+    Everyone,
+    Some,
+}
+
 #[component]
-fn NonInteractiveDate(date: Date, calendar_month: CalendarMonth) -> impl IntoView {
-    let class = if date.month() == calendar_month.month {
-        "ring-gray-400 hover:ring-1 h-12 text-white w-full"
+fn NonInteractiveDate(
+    date: Date,
+    calendar_month: CalendarMonth,
+    date_rank: DateRank,
+) -> impl IntoView {
+    let mut class = "relative h-12 w-full flex items-center justify-center".to_string();
+
+    if is_today(date) {
+        class += " ring-sky-500 ring-1"
+    }
+
+    if date.month() == calendar_month.month {
+        class += " text-white"
     } else {
-        "ring-gray-400 hover:ring-1 h-12 text-gray-500 w-full"
-    };
+        class += " text-gray-500"
+    }
+
+    let mut selected_class = "absolute top-1/2 left-1/2  transform -translate-x-1/2 -translate-y-1/2  w-10 h-10 rounded-full z-0".to_string();
+
+    match date_rank {
+        DateRank::All => selected_class += " bg-slate-500",
+        DateRank::Some => selected_class += " bg-slate-700",
+        DateRank::None => selected_class = "".to_string(),
+    }
 
     view! {
-        <button type="button" class=class>
-            {date.day()}
-        </button>
+        <div class=class>
+                <span class=selected_class></span>
+                <span class="relative z-10">{date.day()}</span>
+        </div>
     }
 }
 
 #[component]
-fn InteractiveDate(date: Date, selected: bool, calendar_month: CalendarMonth) -> impl IntoView {
+fn InteractiveDate(
+    date: Date,
+    selected: bool,
+    calendar_month: CalendarMonth,
+    others_date_rank: DateRank,
+) -> impl IntoView {
     let user_public_id = htmx_ids::USER_PUBLIC_ID.clone();
     let date_button_id = HtmxInput::new(HtmxId::new(&format!("date-{}", date)), "date");
 
@@ -251,19 +284,39 @@ fn InteractiveDate(date: Date, selected: bool, calendar_month: CalendarMonth) ->
         HtmxInclude::from(vec![user_public_id, date_button_id.clone()]).to_string();
 
     // TODO: Think of how to improve class composing in a less ad-hoc way
-    let mut class = "ring-gray-400 hover:ring-1 h-12 w-full".to_string();
+    let mut class = "relative h-12 w-full".to_string();
+
+    if is_today(date) {
+        class += " ring-sky-500 ring-1 hover:ring-gray-400"
+    } else {
+        class += " ring-gray-400 hover:ring-1"
+    }
+
     if date.month() == calendar_month.month {
         class += " text-white"
     } else {
         class += " text-gray-500"
     }
-    let selected_class = class.clone() + " bg-slate-500";
 
+    let mut selected_class = class.clone();
+
+    match others_date_rank {
+        DateRank::All => selected_class += " bg-slate-500",
+        _ => selected_class += " bg-slate-700",
+    }
     let xdata = if selected {
         "{isDelete : true}"
     } else {
         "{isDelete : false}"
     };
+
+    let mut others_selected_class = "absolute top-1/2 left-1/2  transform -translate-x-1/2 -translate-y-1/2  w-12 h-12 rounded-full z-0".to_string();
+
+    match others_date_rank {
+        DateRank::All => others_selected_class += " bg-slate-500",
+        DateRank::Some => others_selected_class += " bg-slate-700",
+        DateRank::None => others_selected_class = "".to_string(),
+    }
 
     view! {
         <div x-data=xdata>
@@ -277,7 +330,8 @@ fn InteractiveDate(date: Date, selected: bool, calendar_month: CalendarMonth) ->
                 x-on:click="isDelete = !isDelete"
                 hx-post="calendar/date"
             >
-                {date.day()}
+                <span class=others_selected_class.clone()></span>
+                <span class="relative z-10">{date.day()}</span>
             </button>
             <button
                 x-show="isDelete"
@@ -288,7 +342,8 @@ fn InteractiveDate(date: Date, selected: bool, calendar_month: CalendarMonth) ->
                 x-on:click="isDelete = !isDelete"
                 hx-delete="calendar/date"
             >
-                {date.day()}
+                <span class=others_selected_class></span>
+                <span class="relative z-10">{date.day()}</span>
             </button>
         </div>
     }
@@ -459,5 +514,45 @@ where
         "December" => Ok(Month::December),
         _ => Err(serde::de::Error::custom(format!("Invalid month: {}", s))),
     }
+}
+
+fn is_today(date: Date) -> bool {
+    let today = time::OffsetDateTime::now_utc().date();
+    date == today
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum DateRank {
+    All,
+    Some,
+    None,
+}
+
+fn ranked_dates(users_with_dates: &Vec<UserWithDates>) -> HashMap<Date, DateRank> {
+    let total_users = users_with_dates.len();
+
+    // Flatten dates and count
+    let mut date_counts: HashMap<Date, usize> = HashMap::new();
+
+    for (_, dates) in users_with_dates {
+        for date in dates {
+            *date_counts.entry(date.date).or_insert(0) += 1;
+        }
+    }
+
+    // Step 2: Create a HashMap<Date, DateRank> to categorize each date
+    let mut date_rankings: HashMap<Date, DateRank> = HashMap::new();
+
+    for (date, count) in date_counts {
+        let rank = if count == total_users {
+            DateRank::All
+        } else {
+            DateRank::Some
+        };
+
+        date_rankings.insert(date, rank);
+    }
+
+    date_rankings
 }
 // endregion: --- Utils

@@ -46,7 +46,6 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
             <head>
                 <title>{title}</title>
 
-
                 <link href="/main.css" type="text/css" rel="stylesheet"/>
 
                 <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.min.js" defer></script>
@@ -65,19 +64,6 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
 
             </body>
         </html>
-    }
-}
-
-#[component]
-fn StyleSheetLink() -> impl IntoView {
-    view! {
-        <link
-            rel="preload"
-            href="/main.css"
-            type="text/css"
-            r#as="style"
-            onload="this.onload=null;this.rel='stylesheet'"
-        />
     }
 }
 
