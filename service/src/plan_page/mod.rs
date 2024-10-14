@@ -1,4 +1,8 @@
-use crate::{app::Page, error::Result};
+use crate::{
+    app::Page,
+    error::Result,
+    util_components::{CopyToClipboard, Icon},
+};
 use axum::{
     body::Body,
     extract::{Path, State},
@@ -24,6 +28,7 @@ use user::Users;
 
 mod calendar;
 mod htmx_ids;
+mod results;
 mod user;
 
 pub fn routes(mm: ModelManager) -> Router {
@@ -103,10 +108,18 @@ async fn plan_page_handler(
 #[component]
 fn PlanPage(plan: plans::Model, users_with_dates: Vec<UserWithDates>) -> impl IntoView {
     let plan_title = plan.name.to_string();
+
+    let url = plan.public_id;
+
     view! {
         <Page title=plan_title.clone()>
-            <div>
-                <h1>{plan_title}</h1>
+            <div class="relative flex justify-center items-center">
+                <h1 class="text-center">{plan_title}</h1>
+                <div class="absolute right-0">
+                    <CopyToClipboard value=url>
+                        <Icon icon=Icon::Share/>
+                    </CopyToClipboard>
+                </div>
             </div>
 
             <Calendar
@@ -137,7 +150,7 @@ async fn redirect_plan_handler(Path(page_slug): Path<String>) -> impl IntoRespon
 pub type UserWithDates = (users::Model, Vec<dates::Model>);
 
 fn filter_users_with_dates(
-    users_with_dates: &Vec<UserWithDates>,
+    users_with_dates: &[UserWithDates],
     user_public_id: PublicId,
 ) -> Option<UserWithDates> {
     // -- Get the dates for the current user
@@ -151,7 +164,7 @@ pub fn remove_user(
     mut users_with_dates: Vec<UserWithDates>,
     user_public_id: PublicId,
 ) -> Vec<UserWithDates> {
-    // -- Get the dates for the current user
+    // -- Only keep other users
     users_with_dates.retain(|(user, _)| user.public_id != user_public_id);
     users_with_dates
 }

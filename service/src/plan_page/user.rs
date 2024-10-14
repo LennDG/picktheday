@@ -3,9 +3,9 @@ use crate::{
     htmx_helpers::{HtmxId, HtmxInclude, HtmxInput, HtmxTarget},
     plan_page::{
         calendar::{Calendar, CalendarMonth},
-        htmx_ids,
+        htmx_ids, remove_user,
     },
-    util_components::{HtmxHiddenInput, HtmxSwapOob},
+    util_components::{HtmxHiddenInput, HtmxSwapOob, Icon},
 };
 use axum::{
     extract::{Path, Query, State},
@@ -150,13 +150,23 @@ fn UsersUpdate(
 static USERS_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("users"));
 #[component]
 pub fn Users(
-    users_with_dates: Vec<UserWithDates>,
+    mut users_with_dates: Vec<UserWithDates>,
     current_user: Option<PublicId>,
 ) -> impl IntoView {
-    let user_id = match current_user {
+    let user_public_id = match current_user.clone() {
         Some(public_id) => public_id.to_string(),
         None => "".to_string(),
     };
+
+    if let Some(index) = users_with_dates
+        .iter()
+        .position(|(user, _)| match &current_user {
+            Some(user_public_id) => user.public_id == *user_public_id,
+            None => false,
+        })
+    {
+        users_with_dates.swap(0, index);
+    }
 
     let users = users_with_dates
         .into_iter()
@@ -165,7 +175,7 @@ pub fn Users(
 
     view! {
         <div id="users">
-            <HtmxHiddenInput input=htmx_ids::USER_PUBLIC_ID.clone() value=user_id/>
+            <HtmxHiddenInput input=htmx_ids::USER_PUBLIC_ID.clone() value=user_public_id/>
             <UserInput/>
             <UserList users=users/>
         </div>
@@ -193,7 +203,7 @@ fn UserInput() -> impl IntoView {
                 </div>
                 <button
                     type="submit"
-                    class="mb-2 me-2 flex rounded-lg border-gray-700 bg-gray-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
+                    class="mb-2 me-2 flex rounded-lg bg-gray-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
                 >
                     "Create"
                 </button>
@@ -227,13 +237,12 @@ fn UserList(users: Vec<users::Model>) -> impl IntoView {
                                 hx-include=include
                                 class="p-2 text-gray-400 hover:text-white"
                             >
-                                "Edit"
+                                <Icon icon=Icon::Edit/>
                             </button>
                         </li>
                     }
                 })
                 .collect_view()}
-
         </ul>
     }
 }

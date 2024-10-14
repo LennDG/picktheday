@@ -25,7 +25,7 @@ use crate::{
     error::Result,
     htmx_helpers::{HtmxId, HtmxInclude, HtmxInput, HtmxTarget},
     plan_page::{filter_users_with_dates, htmx_ids},
-    util_components::HtmxHiddenInput,
+    util_components::{HtmxHiddenInput, Icon},
 };
 
 use super::UserWithDates;
@@ -223,20 +223,6 @@ fn Dates(
 }
 
 #[component]
-fn SelectedByAnyUser(children: Children, selected: bool) -> impl IntoView {
-    if selected {
-        Either::Left(view! { <div class="bg-slate-700">{children()}</div> })
-    } else {
-        Either::Right(view! { {children()} })
-    }
-}
-
-enum SelectedColors {
-    Everyone,
-    Some,
-}
-
-#[component]
 fn NonInteractiveDate(
     date: Date,
     calendar_month: CalendarMonth,
@@ -264,8 +250,8 @@ fn NonInteractiveDate(
 
     view! {
         <div class=class>
-                <span class=selected_class></span>
-                <span class="relative z-10">{date.day()}</span>
+            <span class=selected_class></span>
+            <span class="relative z-10">{date.day()}</span>
         </div>
     }
 }
@@ -359,19 +345,19 @@ fn SwitchMonthButton(
     next_or_previous: SwitchMonth,
     calendar_month: CalendarMonth,
 ) -> impl IntoView {
-    let (switch_month_id, switch_year_id, switch_calendar_month, button_label) =
+    let (switch_month_id, switch_year_id, switch_calendar_month, button_icon) =
         match next_or_previous {
             SwitchMonth::Previous => (
                 HtmxInput::new(HtmxId::new("previous_month"), "month"),
                 HtmxInput::new(HtmxId::new("previous_year"), "year"),
                 previous_month(calendar_month),
-                "Previous",
+                Icon::Back,
             ),
             SwitchMonth::Next => (
                 HtmxInput::new(HtmxId::new("next_month"), "month"),
                 HtmxInput::new(HtmxId::new("next_year"), "year"),
                 next_month(calendar_month),
-                "Next",
+                Icon::Forward,
             ),
         };
 
@@ -392,7 +378,9 @@ fn SwitchMonthButton(
             hx-include=include_targets
             hx-target=calendar_target
         >
-            {button_label}
+        <div>
+            <Icon icon=button_icon/>
+        </div>
         </button>
     }
 }

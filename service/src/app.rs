@@ -44,6 +44,10 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
         <!DOCTYPE html>
         <html lang="en">
             <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <meta name="color-scheme" content="dark"/>
+                <meta charset="utf-8"/>
+
                 <title>{title}</title>
 
                 <link href="/main.css" type="text/css" rel="stylesheet"/>
@@ -51,9 +55,7 @@ pub fn Page(title: String, children: Children) -> impl IntoView {
                 <script src="https://unpkg.com/htmx.org@2.0.2/dist/htmx.min.js" defer></script>
                 <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
 
-                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-                <meta name="color-scheme" content="dark"/>
-                <meta charset="utf-8"/>
+                <CopyInputToClipboardScript/>
             </head>
 
             <body class="bg-slate-800">
@@ -110,5 +112,31 @@ pub fn NotFound() -> impl IntoView {
             <p>"Page not found"</p>
             <a href="/">"Back to Home"</a>
         </div>
+    }
+}
+
+#[component]
+fn CopyInputToClipboardScript() -> impl IntoView {
+    view! {
+        <script>
+            "
+            function initClipboard(copyButtonId, textToCopy) {
+                const copyButton = document.getElementById(copyButtonId);
+            
+                if (!copyButton) {
+                    console.error('Invalid input or copy button element');
+                    return;
+                }
+            
+                copyButton.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(textToCopy);
+                    } catch (err) {
+                        console.error('Failed to copy: ', err);
+                    }
+                });
+            }
+            "
+        </script>
     }
 }

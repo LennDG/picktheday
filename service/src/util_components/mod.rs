@@ -1,6 +1,7 @@
 use crate::htmx_helpers::{HtmxId, HtmxInput};
 use std::fmt::Display;
 
+use derive_more::derive::Display;
 use leptos::prelude::*;
 
 #[component]
@@ -28,28 +29,40 @@ pub fn HtmxSwapOob(id: HtmxId, children: Children) -> impl IntoView {
     }
 }
 
-// TODO
+#[derive(Debug, Clone, Copy, Display)]
+pub enum Icon {
+    #[display("/icons/share.svg")]
+    Share,
+    #[display("/icons/results.svg")]
+    Results,
+    #[display("/icons/edit.svg")]
+    Edit,
+    #[display("/icons/delete.svg")]
+    Delete,
+    #[display("/icons/arrow_back.svg")]
+    Back,
+    #[display("/icons/arrow_forward.svg")]
+    Forward,
+}
+
 #[component]
-pub fn TextInput(post_uri: String) -> impl IntoView {
+pub fn Icon(icon: Icon) -> impl IntoView {
     view! {
-        <form
-            hx-post="/plan"
-            class="container relative z-0 mx-auto flex max-w-80 justify-center space-x-4"
-        >
-            <div>
-                <input
-                    type="text"
-                    name="plan_name"
-                    class="border-1 peer block w-full appearance-none rounded-lg border border-gray-600 bg-transparent px-2 py-2.5 text-sm text-white outline-none focus:border-gray-300 "
-                    placeholder="e.g. Tennis"
-                />
-            </div>
-            <button
-                type="submit"
-                class="mb-2 me-2 flex rounded-lg border-gray-700 bg-gray-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
-            >
-                "Create"
-            </button>
-        </form>
+        <div class="flex items-center justify-center bg-gray-600 p-1 rounded-lg hover:bg-gray-700">
+            <img src=icon.to_string()/>
+        </div>
+    }
+}
+
+#[component]
+pub fn CopyToClipboard(value: impl Display, children: Children) -> impl IntoView {
+    let button_id = HtmxId::new("copy_button").to_string();
+    let script = format!("initClipboard('{}', '{}');", button_id, value);
+
+    view! {
+        <button id=button_id type="button">
+            {children()}
+        </button>
+        <script>{script}</script>
     }
 }
