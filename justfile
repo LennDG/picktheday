@@ -38,9 +38,6 @@ fix:
     cargo fix --bin picktheday --allow-dirty
     cargo fix --lib --allow-dirty -p entity
 
-build:
-    cargo leptos build --release
-
 tailwind_watch:
     cd service && npx tailwindcss -i ./style/input.css -o ../public/main.css --watch
 tailwind:
@@ -93,3 +90,10 @@ docker_release:
 docker_start_production:
     docker compose pull picktheday-prod
     docker compose up picktheday-prod
+
+brotli:
+    find public/ -type f -name "*.br" -delete
+    find public/ -type f -exec brotli --force -o {}.br {} \;
+
+build_release:
+    cargo build --package picktheday --release

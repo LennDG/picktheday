@@ -3,7 +3,7 @@ use crate::{
     htmx_helpers::{HtmxId, HtmxInclude, HtmxInput, HtmxTarget},
     plan_page::{
         calendar::{Calendar, CalendarMonth},
-        htmx_ids, remove_user,
+        htmx_ids,
     },
     util_components::{HtmxHiddenInput, HtmxSwapOob, Icon},
 };
@@ -19,7 +19,7 @@ use entity::{
     users::{self},
 };
 use http::StatusCode;
-use leptos::prelude::*;
+use leptos::{either::Either, prelude::*};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use tracing::debug;
@@ -150,7 +150,7 @@ fn UsersUpdate(
 static USERS_ID: Lazy<HtmxId> = Lazy::new(|| HtmxId::new("users"));
 #[component]
 pub fn Users(
-    mut users_with_dates: Vec<UserWithDates>,
+    users_with_dates: Vec<UserWithDates>,
     current_user: Option<PublicId>,
 ) -> impl IntoView {
     let user_public_id = match current_user.clone() {
@@ -158,65 +158,97 @@ pub fn Users(
         None => "".to_string(),
     };
 
-    if let Some(index) = users_with_dates
-        .iter()
-        .position(|(user, _)| match &current_user {
-            Some(user_public_id) => user.public_id == *user_public_id,
-            None => false,
-        })
-    {
-        users_with_dates.swap(0, index);
-    }
-
-    let users = users_with_dates
+    let mut users: Vec<users::Model> = users_with_dates
         .into_iter()
         .map(|user_dates| user_dates.0)
         .collect();
 
-    view! {
-        <div id="users">
-            <HtmxHiddenInput input=htmx_ids::USER_PUBLIC_ID.clone() value=user_public_id/>
-            <UserInput/>
-            <UserList users=users/>
-        </div>
+    if let Some(current_user) = current_user.and_then(|current_user_public_id| {
+        // Find the current user in the list based on public_id
+        let current_user = users
+            .iter()
+            .find(|user| user.public_id == current_user_public_id)
+            .cloned();
+        // Retain all other users except the current one
+        users.retain(|user| user.public_id != current_user_public_id);
+        current_user
+    }) {
+        Either::Left(view! {
+            <div id="users">
+                <HtmxHiddenInput input=htmx_ids::USER_PUBLIC_ID.clone() value=user_public_id/>
+                <UserListWithActiveUser other_users=users current_user=current_user/>
+            </div>
+        })
+    } else {
+        Either::Right(view! {
+            <div id="users">
+                <HtmxHiddenInput input=htmx_ids::USER_PUBLIC_ID.clone() value=user_public_id/>
+                <UserListNoActiveUser users=users/>
+            </div>
+        })
     }
 }
 
 #[component]
-fn UserInput() -> impl IntoView {
+fn CurrentUser(user: users::Model) -> impl IntoView {
+    let username = user.name.to_string();
     view! {
-        <div>
-            <form
-                hx-post="user"
-                hx-target=HtmxTarget::from(USERS_ID.clone()).to_string()
-                hx-swap="outerHTML"
-                class="container relative z-0 mx-auto flex max-w-80 justify-center space-x-4"
-            >
-                <div>
-                    <input
-                        type="text"
-                        id="username"
-                        name="username"
-                        class="border-1 peer block w-full appearance-none rounded-lg border border-gray-600 bg-transparent px-2 py-2.5 text-sm text-white outline-none focus:border-gray-300 "
-                        placeholder="Your name"
-                    />
-                </div>
-                <button
-                    type="submit"
-                    class="mb-2 me-2 flex rounded-lg bg-gray-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
-                >
-                    "Create"
-                </button>
-
-            </form>
-        </div>
+        <li class="flex justify-between items-center border-b border-gray-700 py-2">
+            <span class="text-white font-bold">{username}</span>
+        </li>
     }
 }
 
 #[component]
-fn UserList(users: Vec<users::Model>) -> impl IntoView {
+fn UserListWithActiveUser(
+    /// The list of all users *except* the currently active one
+    other_users: Vec<users::Model>,
+    /// Currently active user
+    current_user: users::Model,
+) -> impl IntoView {
     view! {
         <ul class="mx-auto max-w-80 mt-4 space-y-2">
+            <CurrentUser user=current_user/>
+            {other_users
+                .into_iter()
+                .map(|user| {
+                    let username = user.name.to_string();
+                    let input = HtmxInput::new(
+                        HtmxId::new(&format!("user{}", &user.public_id)),
+                        "user_public_id",
+                    );
+                    let include = HtmxInclude::from(input.clone()).to_string();
+                    let target = HtmxTarget::from(USERS_ID.clone()).to_string();
+                    view! {
+                        <li class="flex justify-between items-center border-b border-gray-700 py-2">
+                            <HtmxHiddenInput input=input value=user.public_id/>
+                            <span class="text-white">{username}</span>
+                            <button
+                                hx-get="user"
+                                hx-target=target
+                                hx-include=include
+                                class="p-2 text-gray-400 hover:text-white"
+                            >
+                                <Icon icon=Icon::Edit/>
+                            </button>
+                        </li>
+                    }
+                })
+                .collect_view()}
+            <li class="flex justify-between items-center">
+                <UserInput/>
+            </li>
+        </ul>
+    }
+}
+
+#[component]
+fn UserListNoActiveUser(users: Vec<users::Model>) -> impl IntoView {
+    view! {
+        <ul class="mx-auto max-w-80 mt-4 space-y-2">
+            <li class="flex justify-between items-center">
+                <UserInput/>
+            </li>
             {users
                 .into_iter()
                 .map(|user| {
@@ -244,5 +276,34 @@ fn UserList(users: Vec<users::Model>) -> impl IntoView {
                 })
                 .collect_view()}
         </ul>
+    }
+}
+
+#[component]
+fn UserInput() -> impl IntoView {
+    view! {
+        <form
+            hx-post="user"
+            hx-target=HtmxTarget::from(USERS_ID.clone()).to_string()
+            hx-swap="outerHTML"
+            class="container mx-auto flex max-w-80 justify-between"
+        >
+            <div>
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    class="border-1 peer block w-full appearance-none rounded-lg border border-gray-600 bg-transparent px-2 py-2.5 text-sm text-white outline-none focus:border-gray-300 "
+                    placeholder="Your name"
+                />
+            </div>
+            <button
+                type="submit"
+                class="mb-2 me-2 flex rounded-lg bg-gray-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-gray-700"
+            >
+                "Create"
+            </button>
+
+        </form>
     }
 }

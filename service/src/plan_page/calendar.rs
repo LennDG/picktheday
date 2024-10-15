@@ -378,9 +378,9 @@ fn SwitchMonthButton(
             hx-include=include_targets
             hx-target=calendar_target
         >
-        <div>
-            <Icon icon=button_icon/>
-        </div>
+            <div>
+                <Icon icon=button_icon/>
+            </div>
         </button>
     }
 }

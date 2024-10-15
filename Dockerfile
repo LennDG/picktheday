@@ -2,13 +2,13 @@
 FROM rustlang/rust:nightly-alpine AS builder
 
 RUN apk update && \
-    apk add --no-cache bash curl npm libc-dev binaryen brotli
+    apk add --no-cache bash curl npm libc-dev binaryen brotli just
 
 WORKDIR /work
 COPY . .
 
-RUN cargo build --package picktheday --release
-RUN brotli public/*
+RUN just build_release
+RUN just brotli
 
 
 # Run the app!
