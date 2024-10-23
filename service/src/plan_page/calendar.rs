@@ -510,13 +510,13 @@ fn is_today(date: Date) -> bool {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum DateRank {
+pub enum DateRank {
     All,
     Some,
     None,
 }
 
-fn ranked_dates(users_with_dates: &Vec<UserWithDates>) -> HashMap<Date, DateRank> {
+pub fn ranked_dates(users_with_dates: &Vec<UserWithDates>) -> HashMap<Date, DateRank> {
     let total_users = users_with_dates.len();
 
     // Flatten dates and count
