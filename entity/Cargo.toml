@@ -9,10 +9,10 @@ name = "entity"
 path = "src/lib.rs"
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-thiserror = "1"
-rand = "0.8"
-time = "0.3"
+serde = { workspace = true }
+thiserror = { workspace = true }
+rand = { workspace = true }
+time = { workspace = true }
 derive_more = { workspace = true }
 
 migration = { path = "../migration" } # depends on your needs

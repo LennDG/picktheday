@@ -7,11 +7,10 @@ edition = "2021"
 # --- Web Framework and Server ---
 axum = { version = "0.7", features = ["macros"] } # Web framework based on Hyper
 axum-htmx = "0.6.0"
-leptos = { version = "0.7.0-beta7", features = [
+leptos = { version = "0.7.0", features = [
     "nightly",
+    "ssr",
 ] } # Frontend framework for building web apps in Rust
-leptos_meta = { version = "0.7.0-beta7" } # Meta tags for leptos
-leptos_axum = { version = "0.7.0-beta7" } # Leptos integration with Axum
 
 # --- Async and Concurrency ---
 tokio = { version = "1", features = [
@@ -25,13 +24,13 @@ tower-http = { version = "0.5", features = [
 once_cell = { workspace = true }
 
 # --- Error Handling ---
-thiserror = "1" # Simplified error handling
+thiserror = { workspace = true } # Simplified error handling
 
 # --- Utilities and Helpers ---
-http = "1"                                       # HTTP types and utilities
-time = { version = "0.3", features = ["serde"] }
-rand = "0.8"                                     # Random number generation
-derive_more = { workspace = true }               # Derive common traits with less boilerplate
+http = "1"                         # HTTP types and utilities
+time = { workspace = true }
+rand = { workspace = true }        # Random number generation
+derive_more = { workspace = true } # Derive common traits with less boilerplate
 dotenvy = { workspace = true }
 
 # --- Tracing and Logging ---
@@ -40,81 +39,14 @@ tracing-subscriber = { version = "0.3", features = [
     "env-filter",
 ] } # tracing subscriber for filtering/logging
 
-# --- Panic Hook ---
-console_error_panic_hook = "0.1" # Hook for better error reporting in WebAssembly
 
 # --- Serialization and JSON ---
-serde = { version = "1", features = ["derive"] } # Serialization framework
-serde_json = "1"                                 # JSON serialization/deserialization
-serde_with = "3"                                 # Enhanced functionality for Serde
-
-# --- WebAssembly ---
-wasm-bindgen = "=0.2.93" # For communicating between Rust and JavaScript in WASM
+serde = { workspace = true } # Serialization framework
+serde_json = "1"             # JSON serialization/deserialization
+serde_with = "3"             # Enhanced functionality for Serde
 
 # --- Modules ---
 entity = { path = "../entity" } # module from local path
 
 [dev-dependencies]
 anyhow = "1"
-
-[features]
-# hydrate = ["leptos/hydrate"]
-# ssr = [
-#     "dep:axum",
-#     "dep:tokio",
-#     "dep:tower",
-#     "dep:tower-http",
-#     "dep:leptos_axum",
-#     "leptos/ssr",
-#     "dep:tracing",
-#     "dep:tracing-subscriber",
-#     "dep:entity",
-# ]
-
-
-[package.metadata.leptos]
-# The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
-output-name = "picktheday"
-
-# The site root folder is where cargo-leptos generate all output. WARNING: all content of this folder will be erased on a rebuild. Use it in your server setup.
-site-root = "target/site"
-
-# The site-root relative folder where all compiled output (JS, WASM and CSS) is written
-# Defaults to pkg
-site-pkg-dir = "pkg"
-
-# [Optional] The source CSS file. If it ends with .sass or .scss then it will be compiled by dart-sass into CSS. The CSS is optimized by Lightning CSS before being written to <site-root>/<site-pkg>/app.css
-style-file = "style/output.css"
-# Assets source dir. All files found here will be copied and synchronized to site-root.
-# The assets-dir cannot have a sub directory with the same name/path as site-pkg-dir.
-#
-#. Env: LEPTOS_ASSETS_DIR.
-assets-dir = "public"
-
-# The IP and port (ex: 127.0.0.1:3000) where the server serves the content. Use it in your server setup.
-site-addr = "127.0.0.1:3000"
-
-# The port to use for automatic reload monitoring
-reload-port = 3001
-
-# [Optional] Command to use when running end2end tests. It will run in the end2end dir.
-#   [Windows] for non-WSL use "npx.cmd playwright test"
-#   This binary name can be checked in Powershell with Get-Command npx
-end2end-cmd = "npx playwright test"
-end2end-dir = "end2end"
-
-#  The browserlist query used for optimizing the CSS.
-browserquery = "defaults"
-
-# The environment Leptos will run in, usually either "DEV" or "PROD"
-env = "DEV"
-
-# The features to use when compiling the bin target
-#
-#. Can be over-ridden with the command line parameter --bin-features
-bin-features = ["ssr"]
-
-# If the --no-default-features flag should be used when compiling the bin target
-#
-#. Defaults to false.
-bin-default-features = false
